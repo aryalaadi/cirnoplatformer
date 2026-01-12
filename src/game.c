@@ -399,6 +399,7 @@ void Game_Update(void) {
     }
   } else if (currentState == STATE_DEATH_SCREEN) {
     deathScreenTimer += dt;
+    World_ResetBullets(&world);
     if (IsKeyPressed(KEY_SPACE) || deathScreenTimer > 2.0f) {
       Player_Init(&world.player, world.player.lastCheckpoint);
       currentState = STATE_PLAYING;

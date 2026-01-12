@@ -145,3 +145,15 @@ bool World_LevelCompleted(const World *world) {
                           TILE_SIZE, TILE_SIZE};
   return CheckCollisionRecs(playerBounds, goalBounds);
 }
+
+void World_ResetBullets(World *world) {
+  world->bulletCount = 0;
+  for (int i = 0; i < MAX_BULLETS; i++) {
+    world->bullets[i].active = false;
+  }
+
+  // reset the timer so player doesnt die on respawn
+  for (int i = 0; i < world->spawnerCount; i++) {
+    world->spawners[i].timer = 0.0f;
+  }
+}

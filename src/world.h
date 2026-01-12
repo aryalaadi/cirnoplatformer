@@ -19,4 +19,5 @@ void World_Unload(World *world);
 void World_Update(World *world, float dt, const KeyBindings *keys);
 void World_Draw(const World *world);
 bool World_LevelCompleted(const World *world);
+void World_ResetBullets(World *world);
 #endif
