@@ -113,7 +113,7 @@ void Player_Update(Player *p, float dt, Assets *assets,
       !p->isFloating) {
     p->dashCooldown = 1.0f;
     p->dashTimer = 0.15f;
-    float dashSpeed = PLAYER_SPEED * 4.0f;
+    float dashSpeed = PLAYER_SPEED * 2.0f;
     Vector2 dashDir = {0, 0};
     if (movingLeft)
       dashDir.x = -1;
@@ -160,7 +160,7 @@ void Player_Update(Player *p, float dt, Assets *assets,
     }
   }
   bool jumpPressed =
-      IsKeyPressed(keys->jump) || IsKeyPressed(KEY_W) || IsKeyPressed(KEY_UP);
+      IsKeyPressed(keys->jump); //|| IsKeyPressed(KEY_W) || IsKeyPressed(KEY_UP);
   if (jumpPressed) {
     p->jumpBufferTime = 0.1f;
     if (p->isFloating) {

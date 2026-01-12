@@ -187,13 +187,13 @@ void Menu_Update(void) {
       case 3:
         settings.keys.dash = key;
         break;
-      case 4:
+      case 5:
         settings.keys.floatKey = key;
         break;
-      case 6:
+      case 4:
         settings.keys.wallCling = key;
         break;
-      case 5:
+      case 6:
         settings.keys.pause = key;
         break;
       }
