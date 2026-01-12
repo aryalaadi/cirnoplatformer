@@ -2,33 +2,35 @@
 #define GAME_H
 #include "achievement.h"
 #include "world.h"
-typedef enum {
-  STATE_MENU,
-  STATE_NAME_INPUT,
-  STATE_LOAD_GAME,
-  STATE_PLAYING,
-  STATE_PAUSED,
-  STATE_DEATH_SCREEN,
-  STATE_LEVEL_COMPLETE,
-  STATE_GAME_COMPLETE,
-  STATE_CREDITS,
-  STATE_VISUAL_NOVEL,
-  STATE_LEVEL_EDITOR,
-  STATE_EDITOR_PAUSED,
-  STATE_VN_EDITOR
+typedef enum
+{
+	STATE_MENU,
+	STATE_NAME_INPUT,
+	STATE_LOAD_GAME,
+	STATE_PLAYING,
+	STATE_PAUSED,
+	STATE_DEATH_SCREEN,
+	STATE_LEVEL_COMPLETE,
+	STATE_GAME_COMPLETE,
+	STATE_CREDITS,
+	STATE_VISUAL_NOVEL,
+	STATE_LEVEL_EDITOR,
+	STATE_EDITOR_PAUSED,
+	STATE_VN_EDITOR
 } GameState;
-typedef struct {
-  char playerName[32];
-  int currentLevel;
-  int totalLevels;
-  int levelsCompleted;
-  int deathCount;
-  int health;
-  int levelDeaths[MAX_LEVELS];
-  bool levelProgress[MAX_LEVELS];
-  char saveName[64];
-  bool isValid;
-  AchievementSystem achievements;
+typedef struct
+{
+	char playerName[32];
+	int currentLevel;
+	int totalLevels;
+	int levelsCompleted;
+	int deathCount;
+	int health;
+	int levelDeaths[MAX_LEVELS];
+	bool levelProgress[MAX_LEVELS];
+	char saveName[64];
+	bool isValid;
+	AchievementSystem achievements;
 } GameData;
 void Game_Init(void);
 void Game_Update(void);

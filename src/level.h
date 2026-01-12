@@ -3,23 +3,25 @@
 #include "assets.h"
 #include "config.h"
 #include "raylib.h"
-typedef struct {
-  char characterName[32];
-  char text[256];
-  char characterSprite[64];
-  int bgColor;
+typedef struct
+{
+	char characterName[32];
+	char text[256];
+	char characterSprite[64];
+	int bgColor;
 } VNDialogue;
-typedef struct {
-  int width, height;
-  int **tiles;
-  int **backgroundTiles;
-  Vector2 playerSpawn;
-  Vector2 goalPos;
-  bool hasGoal;
-  char musicFile[256];
-  bool hasVisualNovel;
-  VNDialogue dialogues[20];
-  int dialogueCount;
+typedef struct
+{
+	int width, height;
+	int **tiles;
+	int **backgroundTiles;
+	Vector2 playerSpawn;
+	Vector2 goalPos;
+	bool hasGoal;
+	char musicFile[256];
+	bool hasVisualNovel;
+	VNDialogue dialogues[20];
+	int dialogueCount;
 } Level;
 void Level_Load(Level *lvl, int index);
 void Level_LoadFromFile(Level *lvl, const char *filepath);

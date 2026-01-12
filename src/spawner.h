@@ -4,16 +4,17 @@
 #include "raylib.h"
 #define MAX_BULLETS 500
 #define MAX_SPAWNERS 50
-typedef struct {
-  float cooldown;
-  int bulletCount;
-  float bulletSpeed;
-  float spreadAngle;
-  float rotationSpeed;
-  bool randomizeSpeed;
-  float speedVariation;
-  Color bulletColor;
-  float bulletSize;
+typedef struct
+{
+	float cooldown;
+	int bulletCount;
+	float bulletSpeed;
+	float spreadAngle;
+	float rotationSpeed;
+	bool randomizeSpeed;
+	float speedVariation;
+	Color bulletColor;
+	float bulletSize;
 } SpawnerConfig;
 void Spawner_Init(BulletSpawner *spawner, Vector2 position,
                   SpawnerPattern pattern);

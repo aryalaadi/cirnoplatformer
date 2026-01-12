@@ -4,15 +4,16 @@
 #include "level.h"
 #include "player.h"
 #include "spawner.h"
-typedef struct {
-  Level level;
-  Player player;
-  Camera2D camera;
-  Assets assets;
-  BulletSpawner spawners[MAX_SPAWNERS];
-  int spawnerCount;
-  Bullet bullets[MAX_BULLETS];
-  int bulletCount;
+typedef struct
+{
+	Level level;
+	Player player;
+	Camera2D camera;
+	Assets assets;
+	BulletSpawner spawners[MAX_SPAWNERS];
+	int spawnerCount;
+	Bullet bullets[MAX_BULLETS];
+	int bulletCount;
 } World;
 void World_Load(World *world, int levelIndex);
 void World_Unload(World *world);
