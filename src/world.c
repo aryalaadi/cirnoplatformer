@@ -47,7 +47,7 @@ void World_Load(World *world, int levelIndex)
 				pattern = SPAWNER_PATTERN_WAVE;
 			else if (tile == TILE_SPAWNER_BURST)
 				pattern = SPAWNER_PATTERN_BURST;
-			if (pattern != -1 && world->spawnerCount < MAX_SPAWNERS)
+			if (pattern >= 0 && world->spawnerCount < MAX_SPAWNERS)
 			{
 				Vector2 pos = {x * TILE_SIZE, y * TILE_SIZE};
 				Spawner_Init(&world->spawners[world->spawnerCount], pos,
@@ -132,11 +132,10 @@ void World_Update(World *world, float dt, const KeyBindings *keys)
 			}
 		}
 	}
-	bool onSafeTile = false;
 	if (tile == TILE_GRASS || tile == TILE_DIRT || tile == TILE_STONE ||
 	    tile == TILE_CHECKPOINT)
 	{
-		onSafeTile = true;
+		// On safe tile
 	}
 	if (world->player.position.y > world->level.height * TILE_SIZE)
 	{

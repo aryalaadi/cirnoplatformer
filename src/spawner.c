@@ -129,7 +129,6 @@ void Spawner_Update(BulletSpawner *spawner, Bullet bullets[], int *bulletCount,
 	if (spawner->timer >= spawner->cooldown)
 	{
 		spawner->timer = 0;
-		int oldBulletCount = *bulletCount;
 		switch (spawner->pattern)
 		{
 		case SPAWNER_PATTERN_CIRCLE:

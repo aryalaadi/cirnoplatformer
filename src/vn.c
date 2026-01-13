@@ -123,9 +123,8 @@ void VN_Draw(const VNState *vn)
 	char displayText[300];
 	strncpy(displayText, current->text, vn->textProgress);
 	displayText[vn->textProgress] = '\0';
-	int maxWidth = SCREEN_WIDTH - 120;
 	DrawText(displayText, 70, SCREEN_HEIGHT - 150, 20, WHITE);
-	if (vn->textProgress >= strlen(current->text))
+	if (vn->textProgress >= (int)strlen(current->text))
 	{
 		if (((int)(GetTime() * 3)) % 2 == 0)
 		{

@@ -26,6 +26,7 @@
 #include "save.h"
 #include "vn.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -311,6 +312,15 @@ void Game_StartLevelEditor(void)
 		editor.vnEditingSprite = false;
 		editor.vnScrollOffset = 0;
 		editor.tileScrollOffset = 0;
+		editor.levelDropdownActive = false;
+		editor.levelDropdownSelection = editor.currentLevelIndex;
+		editor.showResizeDialog = false;
+		snprintf(editor.widthInputBuffer, sizeof(editor.widthInputBuffer), "%d", editor.level.width);
+		snprintf(editor.heightInputBuffer, sizeof(editor.heightInputBuffer), "%d", editor.level.height);
+		editor.editingWidth = false;
+		editor.editingHeight = false;
+		editor.settingPlayerSpawn = false;
+		editor.editingLevelName = false;
 		editor.camera.target = (Vector2){400, 300};
 		editor.camera.offset = (Vector2){SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2};
 		editor.camera.rotation = 0.0f;
@@ -491,7 +501,7 @@ void Game_Update(void)
 		}
 		// The UX might be poor, but gets the job done.
 		if (IsKeyPressed(KEY_B) && !editor.uiInteracting &&
-		    !editor.vnEditorOpen)
+		    !editor.vnEditorOpen && !editor.settingPlayerSpawn)
 		{
 			editor.editingBackground = !editor.editingBackground;
 			const char *msg = editor.editingBackground ? "Background Layer"
@@ -499,8 +509,24 @@ void Game_Update(void)
 			strcpy(editor.statusMessage, msg);
 			editor.statusTimer = 2.0f;
 		}
+		
+		// Toggle player spawn setting mode
+		if (IsKeyPressed(KEY_P) && !editor.uiInteracting && !editor.vnEditorOpen)
+		{
+			editor.settingPlayerSpawn = !editor.settingPlayerSpawn;
+			const char *msg = editor.settingPlayerSpawn ? "Click to set Player Spawn" : "Player Spawn mode OFF";
+			strcpy(editor.statusMessage, msg);
+			editor.statusTimer = 2.0f;
+		}
 		Vector2 mousePos = GetMousePosition();
-		editor.uiInteracting = (mousePos.x > SCREEN_WIDTH - 260);
+		// UI is right panel, top toolbar, and any active dialogs or text editing
+		editor.uiInteracting = (mousePos.x > SCREEN_WIDTH - 260) || 
+		                       (mousePos.y < 90) || 
+		                       editor.showResizeDialog || 
+		                       editor.levelDropdownActive ||
+		                       editor.editingLevelName ||
+		                       editor.editingWidth ||
+		                       editor.editingHeight;
 		if (!editor.uiInteracting)
 		{
 			Vector2 worldMousePos = GetScreenToWorld2D(mousePos, editor.camera);
@@ -514,7 +540,20 @@ void Game_Update(void)
 				editor.camera.target.y -= 400 * dt;
 			if (IsKeyDown(KEY_DOWN))
 				editor.camera.target.y += 400 * dt;
-			if (IsMouseButtonDown(MOUSE_LEFT_BUTTON))
+			if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && editor.settingPlayerSpawn)
+			{
+				// Set player spawn
+				if (tileX >= 0 && tileX < editor.level.width && tileY >= 0 &&
+				    tileY < editor.level.height)
+				{
+					editor.level.playerSpawn = (Vector2){tileX * TILE_SIZE, tileY * TILE_SIZE};
+					snprintf(editor.statusMessage, sizeof(editor.statusMessage),
+					         "Player spawn set to (%d, %d)", tileX, tileY);
+					editor.statusTimer = 3.0f;
+					editor.settingPlayerSpawn = false;
+				}
+			}
+			else if (IsMouseButtonDown(MOUSE_LEFT_BUTTON) && !editor.settingPlayerSpawn)
 			{
 				if (tileX >= 0 && tileX < editor.level.width && tileY >= 0 &&
 				    tileY < editor.level.height)
@@ -531,7 +570,7 @@ void Game_Update(void)
 					}
 				}
 			}
-			if (IsMouseButtonDown(MOUSE_RIGHT_BUTTON))
+			if (IsMouseButtonDown(MOUSE_RIGHT_BUTTON) && !editor.settingPlayerSpawn)
 			{
 				if (tileX >= 0 && tileX < editor.level.width && tileY >= 0 &&
 				    tileY < editor.level.height)
@@ -736,6 +775,41 @@ void Game_Update(void)
 }
 
 // DO NOT TOUCH VERY FRAGILE.
+static const char *GetTileName(int tile)
+{
+	switch (tile)
+	{
+	case 0:
+		return "Empty";
+	case 1:
+		return "Grass";
+	case 2:
+		return "Dirt";
+	case 3:
+		return "Stone";
+	case 4:
+		return "Goal";
+	case 5:
+		return "Damage";
+	case 6:
+		return "Jump Boost";
+	case 7:
+		return "Spike";
+	case 8:
+		return "Checkpoint";
+	case 9:
+		return "Spawner Circle";
+	case 10:
+		return "Spawner Spiral";
+	case 11:
+		return "Spawner Wave";
+	case 12:
+		return "Spawner Burst";
+	default:
+		return (tile >= BACKGROUND_TILE_START) ? "Background" : "Unknown";
+	}
+}
+
 void Game_Draw(void)
 {
 	if (currentState == STATE_MENU)
@@ -916,8 +990,14 @@ void Game_Draw(void)
 		ClearBackground((Color){50, 50, 70, 255});
 		BeginMode2D(editor.camera);
 		Level_Draw(&editor.level, &editor.assets, editor.camera);
-		DrawCircle((int)editor.level.playerSpawn.x + TILE_SIZE / 2,
-		           (int)editor.level.playerSpawn.y + TILE_SIZE / 2, 20, BLUE);
+		
+		// Draw player spawn indicator (blue circle with "P")
+		int spawnX = (int)editor.level.playerSpawn.x + TILE_SIZE / 2;
+		int spawnY = (int)editor.level.playerSpawn.y + TILE_SIZE / 2;
+		DrawCircle(spawnX, spawnY, 20, (Color){0, 100, 255, 150});
+		DrawCircle(spawnX, spawnY, 18, (Color){0, 120, 255, 100});
+		DrawText("P", spawnX - 8, spawnY - 10, 24, WHITE);
+		
 		if (currentState == STATE_LEVEL_EDITOR && !editor.uiInteracting)
 		{
 			Vector2 worldMousePos =
@@ -976,24 +1056,42 @@ void Game_Draw(void)
 		GuiLabel((Rectangle){SCREEN_WIDTH - 250, yPos, 240, 20}, "Level Name:");
 		yPos += 25;
 		Rectangle nameBoxRect = {SCREEN_WIDTH - 250, yPos, 240, 30};
-		bool nameBoxClicked =
-		    CheckCollisionPointRec(GetMousePosition(), nameBoxRect) &&
-		    IsMouseButtonPressed(MOUSE_LEFT_BUTTON);
-		if (nameBoxClicked)
+		
+		// Only activate name editing on explicit click
+		if (CheckCollisionPointRec(GetMousePosition(), nameBoxRect) &&
+		    IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
 		{
-			editor.uiInteracting = true;
+			editor.editingLevelName = true;
 		}
-		if (GuiTextBox(nameBoxRect, editor.levelNameBuffer, 255,
-		               editor.uiInteracting))
-		{
-			strcpy(editor.levelName, editor.levelNameBuffer);
-		}
-		if (editor.uiInteracting && IsMouseButtonPressed(MOUSE_LEFT_BUTTON) &&
+		
+		// Deactivate if clicked outside
+		if (editor.editingLevelName && IsMouseButtonPressed(MOUSE_LEFT_BUTTON) &&
 		    !CheckCollisionPointRec(GetMousePosition(), nameBoxRect))
 		{
-			editor.uiInteracting = false;
+			editor.editingLevelName = false;
+			strcpy(editor.levelName, editor.levelNameBuffer);
+		}
+		
+		if (GuiTextBox(nameBoxRect, editor.levelNameBuffer, 255,
+		               editor.editingLevelName))
+		{
+			editor.editingLevelName = !editor.editingLevelName;
+			if (!editor.editingLevelName)
+			{
+				strcpy(editor.levelName, editor.levelNameBuffer);
+			}
 		}
 		yPos += 40;
+		GuiLine((Rectangle){SCREEN_WIDTH - 250, yPos, 240, 1}, NULL);
+		yPos += 10;
+		GuiLabel((Rectangle){SCREEN_WIDTH - 250, yPos, 240, 20},
+		         TextFormat("Size: %dx%d tiles", editor.level.width, editor.level.height));
+		yPos += 22;
+		int spawnTileX = (int)(editor.level.playerSpawn.x / TILE_SIZE);
+		int spawnTileY = (int)(editor.level.playerSpawn.y / TILE_SIZE);
+		GuiLabel((Rectangle){SCREEN_WIDTH - 250, yPos, 240, 20},
+		         TextFormat("Spawn: (%d, %d)", spawnTileX, spawnTileY));
+		yPos += 25;
 		if (GuiButton((Rectangle){SCREEN_WIDTH - 250, yPos, 115, 30},
 		              "New Level"))
 		{
@@ -1287,50 +1385,89 @@ void Game_Draw(void)
 			              (Color){20, 20, 20, 230});
 			DrawText(editor.statusMessage, 10, SCREEN_HEIGHT - 28, 20, GREEN);
 		}
-		DrawRectangle(0, 0, SCREEN_WIDTH - 260, 60, (Color){0, 0, 0, 200});
-		DrawText("CONTROLS:", 10, 5, 16, YELLOW);
-		DrawText("Arrows: Camera | Click Palette: Select | L-Click: Place | "
-		         "R-Click: Erase",
-		         10, 23, 13, WHITE);
-		DrawText(
-		    "Spawners (9-12): C=Circle, S=Spiral, W=Wave, B=Burst | ESC: Menu",
-		    10, 40, 13, WHITE);
-		DrawRectangle(SCREEN_WIDTH - 260, 0, 260, 30, (Color){0, 0, 0, 200});
-		const char *GetTileName(int tile)
+		// Top toolbar with improved controls
+		DrawRectangle(0, 0, SCREEN_WIDTH - 260, 90, (Color){20, 20, 35, 240});
+		DrawLine(0, 90, SCREEN_WIDTH - 260, 90, YELLOW);
+		
+		// Row 1: Level dropdown and quick actions
+		int toolbarX = 10;
+		int toolbarY = 8;
+		DrawText("Level:", toolbarX, toolbarY, 16, YELLOW);
+		
+		// Level dropdown
+		char dropdownText[512] = "";
+		if (editor.totalLevelFiles > 0 && editor.currentLevelIndex >= 0)
 		{
-			switch (tile)
+			const char *fname = GetFileNameWithoutExt(editor.levelFiles[editor.currentLevelIndex]);
+			snprintf(dropdownText, sizeof(dropdownText), "%s", fname);
+		}
+		else
+		{
+			strcpy(dropdownText, "New Level");
+		}
+		
+		// Build dropdown items list
+		char dropdownItems[8192] = "";
+		for (int i = 0; i < editor.totalLevelFiles && i < MAX_LEVELS; i++)
+		{
+			const char *fname = GetFileNameWithoutExt(editor.levelFiles[i]);
+			strcat(dropdownItems, fname);
+			if (i < editor.totalLevelFiles - 1)
+				strcat(dropdownItems, ";");
+		}
+		
+		if (GuiDropdownBox((Rectangle){toolbarX + 50, toolbarY - 2, 200, 25}, 
+		                   dropdownItems, &editor.levelDropdownSelection, 
+		                   editor.levelDropdownActive))
+		{
+			editor.levelDropdownActive = !editor.levelDropdownActive;
+			if (!editor.levelDropdownActive && editor.levelDropdownSelection != editor.currentLevelIndex)
 			{
-			case 0:
-				return "Empty";
-			case 1:
-				return "Grass";
-			case 2:
-				return "Dirt";
-			case 3:
-				return "Stone";
-			case 4:
-				return "Goal";
-			case 5:
-				return "Damage";
-			case 6:
-				return "Jump Boost";
-			case 7:
-				return "Spike";
-			case 8:
-				return "Checkpoint";
-			case 9:
-				return "Spawner Circle";
-			case 10:
-				return "Spawner Spiral";
-			case 11:
-				return "Spawner Wave";
-			case 12:
-				return "Spawner Burst";
-			default:
-				return (tile >= BACKGROUND_TILE_START) ? "Background"
-				                                       : "Unknown";
+				if (editor.levelDropdownSelection >= 0 && editor.levelDropdownSelection < editor.totalLevelFiles)
+				{
+					Editor_LoadLevel(&editor, editor.levelDropdownSelection);
+				}
 			}
 		}
+		
+		// Resize button
+		if (GuiButton((Rectangle){toolbarX + 260, toolbarY - 2, 80, 25}, 
+		              TextFormat("%dx%d", editor.level.width, editor.level.height)))
+		{
+			editor.showResizeDialog = !editor.showResizeDialog;
+			snprintf(editor.widthInputBuffer, sizeof(editor.widthInputBuffer), "%d", editor.level.width);
+			snprintf(editor.heightInputBuffer, sizeof(editor.heightInputBuffer), "%d", editor.level.height);
+		}
+		
+		// Player spawn button
+		if (GuiButton((Rectangle){toolbarX + 350, toolbarY - 2, 110, 25}, 
+		              editor.settingPlayerSpawn ? "Click to Set" : "Set Spawn (P)"))
+		{
+			editor.settingPlayerSpawn = !editor.settingPlayerSpawn;
+		}
+		
+		// Row 2: Instructions
+		toolbarY += 32;
+		DrawText("Arrows: Camera | L-Click: Place | R-Click: Erase | B: Toggle Layer", 
+		         toolbarX, toolbarY, 13, WHITE);
+		
+		// Row 3: Layer info and mode
+		toolbarY += 20;
+		const char *layerMode = editor.editingBackground ? "BG Layer" : "FG Layer";
+		Color layerModeColor = editor.editingBackground ? SKYBLUE : GOLD;
+		if (editor.settingPlayerSpawn)
+		{
+			DrawText("MODE: Setting Player Spawn - Click on a tile", toolbarX, toolbarY, 14, GREEN);
+		}
+		else
+		{
+			DrawText(TextFormat("MODE: %s | Selected: %s (%d)", 
+			                    layerMode, 
+			                    GetTileName(editor.selectedTile),
+			                    editor.selectedTile), 
+			         toolbarX, toolbarY, 13, layerModeColor);
+		}
+		DrawRectangle(SCREEN_WIDTH - 260, 0, 260, 30, (Color){0, 0, 0, 200});
 		const char *layerPrefix = editor.editingBackground ? "BG: " : "";
 		DrawText(TextFormat("Selected: %s%s (%d)", layerPrefix,
 		                    GetTileName(editor.selectedTile),
@@ -1341,6 +1478,102 @@ void Game_Draw(void)
 		{
 			EditorPause_Draw();
 		}
+		
+		// Resize Dialog
+		if (editor.showResizeDialog)
+		{
+			DrawRectangle(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, (Color){0, 0, 0, 180});
+			
+			int dialogW = 400;
+			int dialogH = 280;
+			int dialogX = (SCREEN_WIDTH - dialogW) / 2;
+			int dialogY = (SCREEN_HEIGHT - dialogH) / 2;
+			
+			DrawRectangle(dialogX, dialogY, dialogW, dialogH, (Color){30, 30, 50, 255});
+			DrawRectangleLinesEx((Rectangle){dialogX, dialogY, dialogW, dialogH}, 3, GOLD);
+			
+			DrawText("RESIZE LEVEL", dialogX + 120, dialogY + 20, 22, YELLOW);
+			
+			int contentY = dialogY + 60;
+			DrawText(TextFormat("Current: %dx%d tiles", editor.level.width, editor.level.height),
+			         dialogX + 20, contentY, 16, WHITE);
+			
+			contentY += 35;
+			DrawText("New Width:", dialogX + 20, contentY, 16, WHITE);
+			Rectangle widthBox = {dialogX + 140, contentY - 4, 220, 28};
+			
+			if (GuiTextBox(widthBox, editor.widthInputBuffer, 6, editor.editingWidth))
+			{
+				editor.editingWidth = !editor.editingWidth;
+			}
+			
+			contentY += 40;
+			DrawText("New Height:", dialogX + 20, contentY, 16, WHITE);
+			Rectangle heightBox = {dialogX + 140, contentY - 4, 220, 28};
+			
+			if (GuiTextBox(heightBox, editor.heightInputBuffer, 6, editor.editingHeight))
+			{
+				editor.editingHeight = !editor.editingHeight;
+			}
+			
+			contentY += 45;
+			DrawText("Range: 20-128 tiles", dialogX + 20, contentY, 14, GRAY);
+			
+			contentY += 30;
+			if (GuiButton((Rectangle){dialogX + 20, contentY, 170, 35}, "Apply Resize"))
+			{
+				int newW = atoi(editor.widthInputBuffer);
+				int newH = atoi(editor.heightInputBuffer);
+				
+				if (newW < MIN_WORLD_WIDTH) newW = MIN_WORLD_WIDTH;
+				if (newW > MAX_WORLD_WIDTH) newW = MAX_WORLD_WIDTH;
+				if (newH < MIN_WORLD_HEIGHT) newH = MIN_WORLD_HEIGHT;
+				if (newH > MAX_WORLD_HEIGHT) newH = MAX_WORLD_HEIGHT;
+				
+				// Create new level with new size and copy old data
+				Level newLevel;
+				Level_Create(&newLevel, newW, newH);
+				
+				// Copy tiles up to min dimensions
+				int copyW = (newW < editor.level.width) ? newW : editor.level.width;
+				int copyH = (newH < editor.level.height) ? newH : editor.level.height;
+				
+				for (int y = 0; y < copyH; y++)
+				{
+					for (int x = 0; x < copyW; x++)
+					{
+						newLevel.tiles[y][x] = editor.level.tiles[y][x];
+						newLevel.backgroundTiles[y][x] = editor.level.backgroundTiles[y][x];
+					}
+				}
+				
+				// Copy other properties
+				newLevel.playerSpawn = editor.level.playerSpawn;
+				newLevel.goalPos = editor.level.goalPos;
+				newLevel.hasGoal = editor.level.hasGoal;
+				strcpy(newLevel.musicFile, editor.level.musicFile);
+				newLevel.hasVisualNovel = editor.level.hasVisualNovel;
+				newLevel.dialogueCount = editor.level.dialogueCount;
+				for (int i = 0; i < editor.level.dialogueCount; i++)
+				{
+					newLevel.dialogues[i] = editor.level.dialogues[i];
+				}
+				
+				Level_Unload(&editor.level);
+				editor.level = newLevel;
+				
+				snprintf(editor.statusMessage, sizeof(editor.statusMessage), 
+				         "Level resized to %dx%d", newW, newH);
+				editor.statusTimer = 3.0f;
+				editor.showResizeDialog = false;
+			}
+			
+			if (GuiButton((Rectangle){dialogX + 210, contentY, 170, 35}, "Cancel"))
+			{
+				editor.showResizeDialog = false;
+			}
+		}
+		
 		if (editor.vnEditorOpen)
 		{
 			DrawRectangle(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT,

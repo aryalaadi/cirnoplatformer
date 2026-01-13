@@ -53,6 +53,16 @@ typedef struct
 	bool vnEditingSprite;
 	float vnScrollOffset;
 	float tileScrollOffset;
+	// UI state
+	bool levelDropdownActive;
+	int levelDropdownSelection;
+	bool showResizeDialog;
+	char widthInputBuffer[8];
+	char heightInputBuffer[8];
+	bool editingWidth;
+	bool editingHeight;
+	bool settingPlayerSpawn;
+	bool editingLevelName;
 } LevelEditor;
 
 typedef enum
