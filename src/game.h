@@ -31,6 +31,9 @@ typedef struct
 	char saveName[64];
 	bool isValid;
 	AchievementSystem achievements;
+	int totalScore;           // Total score across all completed levels
+	int currentLevelScore;    // Score in current level (reset on death)
+	int healthPoints;         // Collected health points (10 = 1 heal)
 } GameData;
 void Game_Init(void);
 void Game_Update(void);

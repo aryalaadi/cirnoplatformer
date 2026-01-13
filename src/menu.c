@@ -47,7 +47,8 @@ static const char *settingsItems[] = {
 static const char *keybindingItems[] = {
     "Move Left: ", "Move Right: ",      "Jump: ",
     "Dash: ",      "Wall Cling: ",      "Float: ", 
-    "Pause: ",     "Slow Down: ",       "Reset to Defaults", "Back"};
+    "Pause: ",     "Slow Down: ",       "Heal: ",
+    "Reset to Defaults", "Back"};
 
 static const char *resolutionNames[] = {"800x600", "1024x768", "1280x720",
                                         "1920x1080"};
@@ -66,6 +67,7 @@ void Menu_SetDefaultKeyBindings(void)
 	settings.keys.menuSelect = KEY_ENTER;
 	settings.keys.menuBack = KEY_ESCAPE;
 	settings.keys.slowDown = KEY_S;
+	settings.keys.heal = KEY_H;
 }
 
 // TODO: support mouse button because my friend uses it for some reason.
@@ -236,6 +238,9 @@ void Menu_Update(void)
 			case 7:
 				settings.keys.slowDown = key;
 				break;
+			case 8:
+				settings.keys.heal = key;
+				break;
 			}
 			waitingForKey = -1;
 			Menu_SaveSettings();
@@ -346,21 +351,21 @@ void Menu_Update(void)
 	else if (currentScreen == MENU_KEYBINDINGS)
 	{
 		if (IsKeyPressed(KEY_DOWN))
-			selectedIndex = (selectedIndex + 1) % 10;
+			selectedIndex = (selectedIndex + 1) % 11;
 		if (IsKeyPressed(KEY_UP))
-			selectedIndex = (selectedIndex + 9) % 10;
+			selectedIndex = (selectedIndex + 10) % 11;
 		if (IsKeyPressed(KEY_ENTER))
 		{
-			if (selectedIndex < 8)
+			if (selectedIndex < 9)
 			{
 				waitingForKey = selectedIndex;
 			}
-			else if (selectedIndex == 8)
+			else if (selectedIndex == 9)
 			{
 				Menu_SetDefaultKeyBindings();
 				Menu_SaveSettings();
 			}
-			else if (selectedIndex == 9)
+			else if (selectedIndex == 10)
 			{
 				currentScreen = MENU_SETTINGS;
 				selectedIndex = 0;
@@ -517,14 +522,14 @@ void Menu_Draw(void)
 			         YELLOW);
 			DrawText("(ESC to cancel)", SCREEN_WIDTH / 2 - 80, 180, 18, GRAY);
 		}
-		for (int i = 0; i < 10; i++)
+		for (int i = 0; i < 11; i++)
 		{
 			Color c =
 			    (i == selectedIndex && waitingForKey < 0) ? YELLOW : WHITE;
-			int yPos = 220 + i * 35;
-			if (i < 8)
+			int yPos = 220 + i * 32;
+			if (i < 9)
 			{
-				DrawText(keybindingItems[i], SCREEN_WIDTH / 2 - 180, yPos, 22,
+				DrawText(keybindingItems[i], SCREEN_WIDTH / 2 - 180, yPos, 20,
 				         c);
 				const char *keyName = "";
 				switch (i)
@@ -553,24 +558,27 @@ void Menu_Draw(void)
 				case 7:
 					keyName = Menu_GetKeyName(settings.keys.slowDown);
 					break;
+				case 8:
+					keyName = Menu_GetKeyName(settings.keys.heal);
+					break;
 				}
 				if (waitingForKey == i)
 				{
-					DrawText("???", SCREEN_WIDTH / 2 + 50, yPos, 22, YELLOW);
+					DrawText("???", SCREEN_WIDTH / 2 + 50, yPos, 20, YELLOW);
 				}
 				else
 				{
-					DrawText(keyName, SCREEN_WIDTH / 2 + 50, yPos, 22, c);
+					DrawText(keyName, SCREEN_WIDTH / 2 + 50, yPos, 20, c);
 				}
 			}
 			else
 			{
-				DrawText(keybindingItems[i], SCREEN_WIDTH / 2 - 100, yPos, 22,
+				DrawText(keybindingItems[i], SCREEN_WIDTH / 2 - 100, yPos, 20,
 				         c);
 			}
 		}
-		DrawText("Press ENTER to rebind", SCREEN_WIDTH / 2 - 100, 510, 18,
+		DrawText("Press ENTER to rebind", SCREEN_WIDTH / 2 - 100, 530, 18,
 		         GRAY);
-		DrawText("Press ESC to go back", SCREEN_WIDTH / 2 - 95, 540, 18, GRAY);
+		DrawText("Press ESC to go back", SCREEN_WIDTH / 2 - 95, 555, 18, GRAY);
 	}
 }

@@ -175,6 +175,9 @@ void Game_StartNewWithName(void)
 	gameData.levelsCompleted = 0;
 	gameData.deathCount = 0;
 	gameData.health = PLAYER_MAX_HEALTH;
+	gameData.totalScore = 0;
+	gameData.currentLevelScore = 0;
+	gameData.healthPoints = 0;
 	memset(gameData.levelProgress, 0, sizeof(gameData.levelProgress));
 	memset(gameData.levelDeaths, 0, sizeof(gameData.levelDeaths));
 	snprintf(gameData.saveName, sizeof(gameData.saveName), "Save_%s",
@@ -579,11 +582,46 @@ void Game_Update(void)
 			Game_PauseToggle();
 			return;
 		}
+		
+		// Handle heal key
+		if (IsKeyPressed(settings->keys.heal))
+		{
+			if (gameData.healthPoints >= HEALTH_POINTS_PER_HEAL && 
+			    world.player.health < world.player.maxHealth)
+			{
+				gameData.healthPoints = 0;  // Reset counter to 0
+				Player_Heal(&world.player, 1);
+			}
+		}
+		
 		World_Update(&world, dt, &settings->keys);
+		
+		// Collect items
+		int healthCollected = 0;
+		int scoreCollected = 0;
+		World_CollectItems(&world, &healthCollected, &scoreCollected);
+		
+		// Add health points, but cap at max. Convert overflow to score
+		int newHealthPoints = gameData.healthPoints + healthCollected;
+		if (newHealthPoints > HEALTH_POINTS_PER_HEAL)
+		{
+			int overflow = newHealthPoints - HEALTH_POINTS_PER_HEAL;
+			scoreCollected += overflow * HEALTH_POINT_TO_SCORE_MULTIPLIER;
+			gameData.healthPoints = HEALTH_POINTS_PER_HEAL;
+		}
+		else
+		{
+			gameData.healthPoints = newHealthPoints;
+		}
+		gameData.currentLevelScore += scoreCollected;
+		
 		if (!Player_IsAlive(&world.player))
 		{
 			gameData.deathCount++;
 			gameData.levelDeaths[gameData.currentLevel]++;
+			// Reset current level score and health points on death
+			gameData.currentLevelScore = 0;
+			gameData.healthPoints = 0;
 			deathScreenTimer = 0;
 			currentState = STATE_DEATH_SCREEN;
 		}
@@ -594,6 +632,12 @@ void Game_Update(void)
 				gameData.levelProgress[gameData.currentLevel] = true;
 				gameData.levelsCompleted++;
 			}
+			// Add level score to total score on completion
+			gameData.totalScore += gameData.currentLevelScore;
+			// Health points carry over to next level
+			// Reset level score for next level
+			gameData.currentLevelScore = 0;
+			
 			Achievement_CheckStageComplete(
 			    &gameData.achievements, gameData.currentLevel,
 			    gameData.levelDeaths[gameData.currentLevel]);
@@ -836,6 +880,9 @@ void Game_Draw(void)
 		y += 60;
 		DrawText(TextFormat("Total Deaths: %d", gameData.deathCount),
 		         SCREEN_WIDTH / 2 - 120, y, 30, RED);
+		y += 50;
+		DrawText(TextFormat("Final Score: %d", gameData.totalScore),
+		         SCREEN_WIDTH / 2 - 120, y, 30, GOLD);
 		y += 100;
 		DrawText("CREDITS", SCREEN_WIDTH / 2 - 70, y, 40, YELLOW);
 		y += 60;
@@ -1643,8 +1690,8 @@ void Game_Draw(void)
 	else if (currentState == STATE_PLAYING || currentState == STATE_PAUSED)
 	{
 		World_Draw(&world);
-		DrawRectangle(0, 0, 280, 115, (Color){0, 0, 0, 150});
-		DrawText(TextFormat("FPS: %d", GetFPS()), 200, 85, 18, LIGHTGRAY);
+		DrawRectangle(0, 0, 360, 155, (Color){0, 0, 0, 150});
+		DrawText(TextFormat("FPS: %d", GetFPS()), 280, 125, 18, LIGHTGRAY);
 		DrawText(TextFormat("Level: %d/%d", gameData.currentLevel + 1,
 		                    gameData.totalLevels),
 		         10, 10, 20, WHITE);
@@ -1654,6 +1701,12 @@ void Game_Draw(void)
 		DrawText(TextFormat("Health: %d/%d", world.player.health,
 		                    world.player.maxHealth),
 		         10, 60, 20, GREEN);
+		DrawText(TextFormat("Health Points: %d/%d", gameData.healthPoints % HEALTH_POINTS_PER_HEAL, HEALTH_POINTS_PER_HEAL),
+		         10, 85, 18, HEALTH_POINT_COLOR);
+		DrawText(TextFormat("Score: %d", gameData.currentLevelScore),
+		         10, 105, 18, SCORE_ITEM_COLOR);
+		DrawText(TextFormat("Total: %d", gameData.totalScore),
+		         10, 125, 18, YELLOW);
 		if (currentState == STATE_PAUSED)
 		{
 			Pause_Draw();

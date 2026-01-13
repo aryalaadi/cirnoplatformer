@@ -14,6 +14,8 @@ typedef struct
 	int spawnerCount;
 	Bullet bullets[MAX_BULLETS];
 	int bulletCount;
+	Collectible collectibles[MAX_COLLECTIBLES];
+	int collectibleCount;
 } World;
 void World_Load(World *world, int levelIndex);
 void World_Unload(World *world);
@@ -21,4 +23,5 @@ void World_Update(World *world, float dt, const KeyBindings *keys);
 void World_Draw(const World *world);
 bool World_LevelCompleted(const World *world);
 void World_ResetBullets(World *world);
+int World_CollectItems(World *world, int *healthPointsCollected, int *scoreCollected);
 #endif

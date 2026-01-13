@@ -34,7 +34,7 @@ SpawnerConfig Spawner_GetDefaultConfig(SpawnerPattern pattern)
 	switch (pattern)
 	{
 	case SPAWNER_PATTERN_CIRCLE:
-		config.cooldown = 2.0f;
+		config.cooldown = 3.0f;
 		config.bulletCount = 4;
 		config.bulletSpeed = 150.0f;
 		config.spreadAngle = 360.0f;
@@ -42,10 +42,10 @@ SpawnerConfig Spawner_GetDefaultConfig(SpawnerPattern pattern)
 		config.randomizeSpeed = false;
 		config.speedVariation = 0;
 		config.bulletColor = RED;
-		config.bulletSize = 5.0f;
+		config.bulletSize = 4.0f;
 		break;
 	case SPAWNER_PATTERN_SPIRAL:
-		config.cooldown = 0.08f;
+		config.cooldown = 2.0f;
 		config.bulletCount = 2;
 		config.bulletSpeed = 120.0f;
 		config.spreadAngle = 0;
@@ -56,7 +56,7 @@ SpawnerConfig Spawner_GetDefaultConfig(SpawnerPattern pattern)
 		config.bulletSize = 4.0f;
 		break;
 	case SPAWNER_PATTERN_WAVE:
-		config.cooldown = 0.4f;
+		config.cooldown = 1.0f;
 		config.bulletCount = 3;
 		config.bulletSpeed = 100.0f;
 		config.spreadAngle = 60.0f;
@@ -116,6 +116,7 @@ void Spawner_InitWithConfig(BulletSpawner *spawner, Vector2 position,
 	spawner->bulletSize = config.bulletSize;
 }
 void Spawner_Update(BulletSpawner *spawner, Bullet bullets[], int *bulletCount,
+                    Collectible collectibles[], int *collectibleCount,
                     Vector2 playerPos, float dt)
 {
 	if (!spawner->active)
@@ -146,6 +147,21 @@ void Spawner_Update(BulletSpawner *spawner, Bullet bullets[], int *bulletCount,
 		case SPAWNER_PATTERN_TARGETING:
 			Spawner_PatternTargeting(spawner, bullets, bulletCount, playerPos);
 			break;
+		}
+		
+		// Randomly spawn collectibles
+		if (*collectibleCount < MAX_COLLECTIBLES - 5)
+		{
+			float spawnRoll = (float)rand() / RAND_MAX;
+			if (spawnRoll < COLLECTIBLE_SPAWN_CHANCE)
+			{
+				float typeRoll = (float)rand() / RAND_MAX;
+				CollectibleType type = (typeRoll < HEALTH_POINT_SPAWN_WEIGHT) 
+				                       ? COLLECTIBLE_HEALTH_POINT 
+				                       : COLLECTIBLE_SCORE;
+				Vector2 center = Vector2Add(spawner->position, (Vector2){25, 25});
+				Collectible_Spawn(collectibles, collectibleCount, center, type);
+			}
 		}
 	}
 }
@@ -334,3 +350,129 @@ bool Bullet_CheckCollision(const Bullet *bullet, Rectangle playerBounds)
 	float distance = sqrtf(dx * dx + dy * dy);
 	return distance < bullet->radius;
 }
+
+// Collectible system implementation
+void Collectible_Spawn(Collectible collectibles[], int *collectibleCount,
+                       Vector2 position, CollectibleType type)
+{
+	if (*collectibleCount >= MAX_COLLECTIBLES)
+		return;
+	
+	// Random direction
+	float angle = ((float)rand() / RAND_MAX) * 360.0f * DEG2RAD;
+	Vector2 velocity = {
+		cosf(angle) * COLLECTIBLE_SPEED,
+		sinf(angle) * COLLECTIBLE_SPEED
+	};
+	
+	float size = (type == COLLECTIBLE_HEALTH_POINT) 
+	             ? HEALTH_POINT_SIZE 
+	             : SCORE_ITEM_SIZE;
+	
+	collectibles[*collectibleCount] = (Collectible){
+		.position = position,
+		.velocity = velocity,
+		.radius = size,
+		.type = type,
+		.active = true,
+		.lifetime = COLLECTIBLE_LIFETIME
+	};
+	(*collectibleCount)++;
+}
+
+void Collectible_Update(Collectible collectibles[], int *collectibleCount, float dt)
+{
+	for (int i = 0; i < *collectibleCount; i++)
+	{
+		if (!collectibles[i].active)
+			continue;
+		
+		// Update position
+		collectibles[i].position.x += collectibles[i].velocity.x * dt;
+		collectibles[i].position.y += collectibles[i].velocity.y * dt;
+		
+		// Update lifetime
+		collectibles[i].lifetime -= dt;
+		if (collectibles[i].lifetime <= 0)
+		{
+			collectibles[i].active = false;
+		}
+		
+		// Bounds checking
+		if (collectibles[i].position.x < -100 || collectibles[i].position.x > 5000 ||
+		    collectibles[i].position.y < -100 || collectibles[i].position.y > 5000)
+		{
+			collectibles[i].active = false;
+		}
+	}
+	
+	// Remove inactive collectibles
+	int writeIndex = 0;
+	for (int readIndex = 0; readIndex < *collectibleCount; readIndex++)
+	{
+		if (collectibles[readIndex].active)
+		{
+			if (writeIndex != readIndex)
+			{
+				collectibles[writeIndex] = collectibles[readIndex];
+			}
+			writeIndex++;
+		}
+	}
+	*collectibleCount = writeIndex;
+}
+
+void Collectible_Draw(const Collectible collectibles[], int collectibleCount)
+{
+	for (int i = 0; i < collectibleCount; i++)
+	{
+		if (!collectibles[i].active)
+			continue;
+		
+		Color color;
+		if (collectibles[i].type == COLLECTIBLE_HEALTH_POINT)
+		{
+			color = HEALTH_POINT_COLOR;
+			// Draw cross for health
+			DrawCircleV(collectibles[i].position, collectibles[i].radius + 2, 
+			           (Color){255, 255, 255, 100});
+			DrawCircleV(collectibles[i].position, collectibles[i].radius, color);
+			
+			float size = collectibles[i].radius * 0.6f;
+			DrawRectangle(collectibles[i].position.x - size / 4, 
+			             collectibles[i].position.y - size,
+			             size / 2, size * 2, WHITE);
+			DrawRectangle(collectibles[i].position.x - size, 
+			             collectibles[i].position.y - size / 4,
+			             size * 2, size / 2, WHITE);
+		}
+		else // COLLECTIBLE_SCORE
+		{
+			color = SCORE_ITEM_COLOR;
+			// Draw star for score
+			DrawCircleV(collectibles[i].position, collectibles[i].radius + 2, 
+			           (Color){255, 255, 255, 100});
+			DrawCircleV(collectibles[i].position, collectibles[i].radius, color);
+			DrawCircleV(collectibles[i].position, collectibles[i].radius - 2, 
+			           (Color){255, 235, 100, 255});
+		}
+	}
+}
+
+bool Collectible_CheckCollection(const Collectible *collectible, Rectangle playerBounds)
+{
+	if (!collectible->active)
+		return false;
+	
+	float closestX = fmaxf(playerBounds.x,
+	                       fminf(collectible->position.x, 
+	                             playerBounds.x + playerBounds.width));
+	float closestY = fmaxf(playerBounds.y,
+	                       fminf(collectible->position.y, 
+	                             playerBounds.y + playerBounds.height));
+	float dx = collectible->position.x - closestX;
+	float dy = collectible->position.y - closestY;
+	float distance = sqrtf(dx * dx + dy * dy);
+	return distance < collectible->radius;
+}
+

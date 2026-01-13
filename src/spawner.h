@@ -14,17 +14,33 @@ typedef struct
 	Color bulletColor;
 	float bulletSize;
 } SpawnerConfig;
+
+// Spawner functions
 void Spawner_Init(BulletSpawner *spawner, Vector2 position,
                   SpawnerPattern pattern);
 void Spawner_InitWithConfig(BulletSpawner *spawner, Vector2 position,
                             SpawnerPattern pattern, SpawnerConfig config);
 void Spawner_Update(BulletSpawner *spawner, Bullet bullets[], int *bulletCount,
+                    Collectible collectibles[], int *collectibleCount,
                     Vector2 playerPos, float dt);
 void Spawner_Draw(const BulletSpawner *spawner);
+
+// Bullet functions
 void Bullet_Update(Bullet bullets[], int *bulletCount, float dt);
 void Bullet_Draw(const Bullet bullets[], int bulletCount);
 bool Bullet_CheckCollision(const Bullet *bullet, Rectangle playerBounds);
+
+// Collectible functions
+void Collectible_Update(Collectible collectibles[], int *collectibleCount, float dt);
+void Collectible_Draw(const Collectible collectibles[], int collectibleCount);
+bool Collectible_CheckCollection(const Collectible *collectible, Rectangle playerBounds);
+void Collectible_Spawn(Collectible collectibles[], int *collectibleCount,
+                       Vector2 position, CollectibleType type);
+
+// Config helpers
 SpawnerConfig Spawner_GetDefaultConfig(SpawnerPattern pattern);
+
+// Pattern generators
 void Spawner_PatternCircle(BulletSpawner *spawner, Bullet bullets[],
                            int *bulletCount);
 void Spawner_PatternSpiral(BulletSpawner *spawner, Bullet bullets[],

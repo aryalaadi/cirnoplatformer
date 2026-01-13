@@ -23,8 +23,8 @@
 //=============================================================================
 // PLAYER SETTINGS
 //=============================================================================
-#define PLAYER_SIZE 25
-#define PLAYER_MAX_HEALTH 3
+#define PLAYER_SIZE 30
+#define PLAYER_MAX_HEALTH 4
 
 // Player Movement
 #define PLAYER_SPEED 250.0f
@@ -74,6 +74,28 @@
 #define MAX_MUSIC_FILES 50
 #define MAX_BULLETS 500
 #define MAX_SPAWNERS 50
+#define MAX_COLLECTIBLES 200
+
+//=============================================================================
+// COLLECTIBLE SYSTEM
+//=============================================================================
+// Health Point System
+#define HEALTH_POINTS_PER_HEAL 3
+#define HEALTH_POINT_VALUE 1
+#define HEALTH_POINT_TO_SCORE_MULTIPLIER 50
+#define HEALTH_POINT_SIZE 8.0f
+#define HEALTH_POINT_COLOR (Color){255, 100, 100, 255}
+
+// Score System
+#define SCORE_ITEM_VALUE 100
+#define SCORE_ITEM_SIZE 10.0f
+#define SCORE_ITEM_COLOR (Color){255, 215, 0, 255}
+
+// Collectible Spawning
+#define COLLECTIBLE_SPAWN_CHANCE 0.25f  
+#define HEALTH_POINT_SPAWN_WEIGHT 0.5f  
+#define COLLECTIBLE_SPEED 150.0f
+#define COLLECTIBLE_LIFETIME 10.0f
 
 //=============================================================================
 // UI SETTINGS
@@ -156,6 +178,23 @@ typedef enum
 	SPAWNER_PATTERN_TARGETING
 } SpawnerPattern;
 
+typedef enum
+{
+	COLLECTIBLE_HEALTH_POINT,
+	COLLECTIBLE_SCORE,
+	COLLECTIBLE_COUNT
+} CollectibleType;
+
+typedef struct
+{
+	Vector2 position;
+	Vector2 velocity;
+	float radius;
+	CollectibleType type;
+	bool active;
+	float lifetime;
+} Collectible;
+
 // This is used to define every bullet spawner and can be used to create many
 // patterns.
 // TODO: integrate this in the level editor for custom spawners.
@@ -217,6 +256,7 @@ typedef struct
 	int wallCling;
 	int floatKey;
 	int slowDown;
+	int heal;
 	int pause;
 	int menuUp;
 	int menuDown;

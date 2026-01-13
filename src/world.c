@@ -31,8 +31,8 @@ void World_Load(World *world, int levelIndex)
 	world->camera.zoom = 1.0f;
 	world->spawnerCount = 0;
 	world->bulletCount = 0;
-	printf("[DEBUG] Loading spawners from level (size: %dx%d)\n",
-	       world->level.width, world->level.height);
+	world->collectibleCount = 0;
+
 	for (int y = 0; y < world->level.height; y++)
 	{
 		for (int x = 0; x < world->level.width; x++)
@@ -50,16 +50,12 @@ void World_Load(World *world, int levelIndex)
 			if (pattern != -1 && world->spawnerCount < MAX_SPAWNERS)
 			{
 				Vector2 pos = {x * TILE_SIZE, y * TILE_SIZE};
-				printf("[DEBUG] Creating spawner #%d: pattern=%d at (%d, %d) "
-				       "tile=%d\n",
-				       world->spawnerCount, pattern, x, y, tile);
 				Spawner_Init(&world->spawners[world->spawnerCount], pos,
 				             pattern);
 				world->spawnerCount++;
 			}
 		}
 	}
-	printf("[DEBUG] Total spawners created: %d\n", world->spawnerCount);
 }
 void World_Unload(World *world)
 {
@@ -83,10 +79,12 @@ void World_Update(World *world, float dt, const KeyBindings *keys)
 		if (distSq < 2250000.0f) // 1500^2
 		{
 			Spawner_Update(&world->spawners[i], world->bullets, &world->bulletCount,
+			               world->collectibles, &world->collectibleCount,
 			               world->player.position, dt);
 		}
 	}
 	Bullet_Update(world->bullets, &world->bulletCount, dt);
+	Collectible_Update(world->collectibles, &world->collectibleCount, dt);
 	Rectangle playerBounds = Player_GetBounds(&world->player);
 	// Only check bullet collisions if bullets exist
 	if (world->bulletCount > 0)
@@ -169,6 +167,7 @@ void World_Draw(const World *world)
 		Spawner_Draw(&world->spawners[i]);
 	}
 	Bullet_Draw(world->bullets, world->bulletCount);
+	Collectible_Draw(world->collectibles, world->collectibleCount);
 	Player_Draw(&world->player);
 	EndMode2D();
 }
@@ -195,4 +194,35 @@ void World_ResetBullets(World *world)
 	{
 		world->spawners[i].timer = 0.0f;
 	}
+}
+
+int World_CollectItems(World *world, int *healthPointsCollected, int *scoreCollected)
+{
+	Rectangle playerBounds = Player_GetBounds(&world->player);
+	int totalCollected = 0;
+	*healthPointsCollected = 0;
+	*scoreCollected = 0;
+	
+	for (int i = 0; i < world->collectibleCount; i++)
+	{
+		if (!world->collectibles[i].active)
+			continue;
+			
+		if (Collectible_CheckCollection(&world->collectibles[i], playerBounds))
+		{
+			world->collectibles[i].active = false;
+			totalCollected++;
+			
+			if (world->collectibles[i].type == COLLECTIBLE_HEALTH_POINT)
+			{
+				*healthPointsCollected += HEALTH_POINT_VALUE;
+			}
+			else if (world->collectibles[i].type == COLLECTIBLE_SCORE)
+			{
+				*scoreCollected += SCORE_ITEM_VALUE;
+			}
+		}
+	}
+	
+	return totalCollected;
 }
