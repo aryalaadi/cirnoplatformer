@@ -1,7 +1,7 @@
 CC = gcc
 CFLAGS = -Wall -Wextra -std=c99
 CFLAGS_DEBUG = -Wall -Wextra -std=c99 -g -O0 -DDEBUG
-CFLAGS_RELEASE = -Wall -Wextra -std=c99 -O2 -DNDEBUG -march=native
+CFLAGS_RELEASE = -Wall -Wextra -std=c99 -O2 -DNDEBUG
 LDFLAGS = -lraylib -lopengl32 -lgdi32 -lwinmm
 LDFLAGS_RELEASE = -lraylib -lopengl32 -lgdi32 -lwinmm -s
 

@@ -1758,6 +1758,7 @@ void Game_Draw(void)
 	{
 		World_Draw(&world);
 		DrawRectangle(0, 0, 280, 115, (Color){0, 0, 0, 150});
+		DrawText(TextFormat("FPS: %d", GetFPS()), 200, 85, 18, LIGHTGRAY);
 		DrawText(TextFormat("Level: %d/%d", gameData.currentLevel + 1,
 		                    gameData.totalLevels),
 		         10, 10, 20, WHITE);
@@ -1767,10 +1768,6 @@ void Game_Draw(void)
 		DrawText(TextFormat("Health: %d/%d", world.player.health,
 		                    world.player.maxHealth),
 		         10, 60, 20, GREEN);
-		DrawText(TextFormat("Spawners: %d", world.spawnerCount), 10, 85, 18,
-		         YELLOW);
-		DrawText(TextFormat("Bullets: %d", world.bulletCount), 150, 85, 18,
-		         RED);
 		if (currentState == STATE_PAUSED)
 		{
 			DrawRectangle(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT,

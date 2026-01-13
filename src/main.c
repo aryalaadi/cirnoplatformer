@@ -24,7 +24,7 @@ int main(void)
 {
 	// Think of a better name for the game.
 	InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Cirno's Hardest Parkour");
-	SetTargetFPS(60);
+	SetTargetFPS(360);
 	SetExitKey(KEY_NULL);
 	Game_Init();
 	while (!WindowShouldClose())

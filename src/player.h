@@ -45,6 +45,7 @@ typedef struct
 	bool facingRight;
 	Texture2D spriteSheet;
 	bool hasSprite;
+	bool isSlowingDown;
 } Player;
 void Player_Init(Player *p, Vector2 spawn);
 void Player_Update(Player *p, float dt, Assets *assets,

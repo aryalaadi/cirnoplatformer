@@ -46,8 +46,8 @@ static const char *settingsItems[] = {
 
 static const char *keybindingItems[] = {
     "Move Left: ", "Move Right: ",      "Jump: ",
-    "Dash: ",      "Wall Cling: ",      "Float: ",
-    "Pause: ",     "Reset to Defaults", "Back"};
+    "Dash: ",      "Wall Cling: ",      "Float: ", 
+    "Pause: ",     "Slow Down: ",       "Reset to Defaults", "Back"};
 
 static const char *resolutionNames[] = {"800x600", "1024x768", "1280x720",
                                         "1920x1080"};
@@ -65,6 +65,7 @@ void Menu_SetDefaultKeyBindings(void)
 	settings.keys.menuDown = KEY_DOWN;
 	settings.keys.menuSelect = KEY_ENTER;
 	settings.keys.menuBack = KEY_ESCAPE;
+	settings.keys.slowDown = KEY_S;
 }
 
 // TODO: support mouse button because my friend uses it for some reason.
@@ -232,6 +233,9 @@ void Menu_Update(void)
 			case 6:
 				settings.keys.pause = key;
 				break;
+			case 7:
+				settings.keys.slowDown = key;
+				break;
 			}
 			waitingForKey = -1;
 			Menu_SaveSettings();
@@ -342,21 +346,21 @@ void Menu_Update(void)
 	else if (currentScreen == MENU_KEYBINDINGS)
 	{
 		if (IsKeyPressed(KEY_DOWN))
-			selectedIndex = (selectedIndex + 1) % 9;
+			selectedIndex = (selectedIndex + 1) % 10;
 		if (IsKeyPressed(KEY_UP))
-			selectedIndex = (selectedIndex + 8) % 9;
+			selectedIndex = (selectedIndex + 9) % 10;
 		if (IsKeyPressed(KEY_ENTER))
 		{
-			if (selectedIndex < 7)
+			if (selectedIndex < 8)
 			{
 				waitingForKey = selectedIndex;
 			}
-			else if (selectedIndex == 7)
+			else if (selectedIndex == 8)
 			{
 				Menu_SetDefaultKeyBindings();
 				Menu_SaveSettings();
 			}
-			else if (selectedIndex == 8)
+			else if (selectedIndex == 9)
 			{
 				currentScreen = MENU_SETTINGS;
 				selectedIndex = 0;
@@ -513,12 +517,12 @@ void Menu_Draw(void)
 			         YELLOW);
 			DrawText("(ESC to cancel)", SCREEN_WIDTH / 2 - 80, 180, 18, GRAY);
 		}
-		for (int i = 0; i < 9; i++)
+		for (int i = 0; i < 10; i++)
 		{
 			Color c =
 			    (i == selectedIndex && waitingForKey < 0) ? YELLOW : WHITE;
 			int yPos = 220 + i * 35;
-			if (i < 7)
+			if (i < 8)
 			{
 				DrawText(keybindingItems[i], SCREEN_WIDTH / 2 - 180, yPos, 22,
 				         c);
@@ -545,6 +549,9 @@ void Menu_Draw(void)
 					break;
 				case 6:
 					keyName = Menu_GetKeyName(settings.keys.pause);
+					break;
+				case 7:
+					keyName = Menu_GetKeyName(settings.keys.slowDown);
 					break;
 				}
 				if (waitingForKey == i)

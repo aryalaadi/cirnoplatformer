@@ -133,6 +133,7 @@ typedef struct
 	int dash;
 	int wallCling;
 	int floatKey;
+	int slowDown;
 	int pause;
 	int menuUp;
 	int menuDown;

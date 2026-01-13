@@ -48,6 +48,7 @@ void Player_Init(Player *p, Vector2 spawn)
 	p->animTimer = 0;
 	p->facingRight = true;
 	p->hasSprite = false;
+	p->isSlowingDown = false;
 	if (FileExists("assets/sprites/player.png"))
 	{
 		p->spriteSheet = LoadTexture("assets/sprites/player.png");
@@ -119,7 +120,7 @@ void Player_Update(Player *p, float dt, Assets *assets, const KeyBindings *keys)
 	bool movingRight = IsKeyDown(keys->moveRight) || IsKeyDown(KEY_RIGHT);
 	bool movingUp =
 	    IsKeyDown(keys->jump) || IsKeyDown(KEY_W) || IsKeyDown(KEY_UP);
-	bool movingDown = IsKeyDown(KEY_S) || IsKeyDown(KEY_DOWN);
+	bool movingDown = IsKeyDown(KEY_DOWN);
 	if (IsKeyPressed(keys->dash) && p->dashCooldown <= 0 && p->canDash &&
 	    !p->isFloating)
 	{
@@ -180,6 +181,15 @@ void Player_Update(Player *p, float dt, Assets *assets, const KeyBindings *keys)
 			p->velocity.x += PLAYER_SPEED * 0.5f;
 			p->facingRight = true;
 		}
+	}
+	if (IsKeyDown(keys->slowDown))
+	{
+		p->velocity.x *= 0.5f;
+		p->isSlowingDown = true;
+	}
+	else
+	{
+		p->isSlowingDown = false;
 	}
 	bool jumpPressed = IsKeyPressed(
 	    keys->jump); //|| IsKeyPressed(KEY_W) || IsKeyPressed(KEY_UP);
