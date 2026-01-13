@@ -38,7 +38,7 @@ void World_Load(World *world, int levelIndex)
 		for (int x = 0; x < world->level.width; x++)
 		{
 			int tile = Level_GetTile(&world->level, x, y);
-			SpawnerPattern pattern = -1;
+			SpawnerPattern pattern = (SpawnerPattern)-1;
 			if (tile == TILE_SPAWNER_CIRCLE)
 				pattern = SPAWNER_PATTERN_CIRCLE;
 			else if (tile == TILE_SPAWNER_SPIRAL)
@@ -72,19 +72,32 @@ void World_Update(World *world, float dt, const KeyBindings *keys)
 	Physics_ApplyGravity(&world->player, dt);
 	Physics_MoveX(&world->player, &world->level, dt);
 	Physics_MoveY(&world->player, &world->level, dt);
+	// Only update spawners within range of player for performance
+	Vector2 playerPos = world->player.position;
 	for (int i = 0; i < world->spawnerCount; i++)
 	{
-		Spawner_Update(&world->spawners[i], world->bullets, &world->bulletCount,
-		               world->player.position, dt);
+		float dx = world->spawners[i].position.x - playerPos.x;
+		float dy = world->spawners[i].position.y - playerPos.y;
+		float distSq = dx * dx + dy * dy;
+		// Only update spawners within ~30 tiles (1500 pixels)
+		if (distSq < 2250000.0f) // 1500^2
+		{
+			Spawner_Update(&world->spawners[i], world->bullets, &world->bulletCount,
+			               world->player.position, dt);
+		}
 	}
 	Bullet_Update(world->bullets, &world->bulletCount, dt);
 	Rectangle playerBounds = Player_GetBounds(&world->player);
-	for (int i = 0; i < world->bulletCount; i++)
+	// Only check bullet collisions if bullets exist
+	if (world->bulletCount > 0)
 	{
-		if (Bullet_CheckCollision(&world->bullets[i], playerBounds))
+		for (int i = 0; i < world->bulletCount; i++)
 		{
-			Player_TakeDamage(&world->player, 1);
-			world->bullets[i].active = false;
+			if (Bullet_CheckCollision(&world->bullets[i], playerBounds))
+			{
+				Player_TakeDamage(&world->player, 1);
+				world->bullets[i].active = false;
+			}
 		}
 	}
 	int tileX = (int)((playerBounds.x + playerBounds.width / 2) / TILE_SIZE);

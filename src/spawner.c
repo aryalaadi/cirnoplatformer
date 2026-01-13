@@ -28,12 +28,6 @@ static Vector2 Vector2Subtract(Vector2 v1, Vector2 v2)
 {
 	return (Vector2){v1.x - v2.x, v1.y - v2.y};
 }
-static float Vector2Distance(Vector2 v1, Vector2 v2)
-{
-	float dx = v2.x - v1.x;
-	float dy = v2.y - v1.y;
-	return sqrtf(dx * dx + dy * dy);
-}
 SpawnerConfig Spawner_GetDefaultConfig(SpawnerPattern pattern)
 {
 	SpawnerConfig config = {0};
@@ -41,7 +35,7 @@ SpawnerConfig Spawner_GetDefaultConfig(SpawnerPattern pattern)
 	{
 	case SPAWNER_PATTERN_CIRCLE:
 		config.cooldown = 2.0f;
-		config.bulletCount = 16;
+		config.bulletCount = 4;
 		config.bulletSpeed = 150.0f;
 		config.spreadAngle = 360.0f;
 		config.rotationSpeed = 0;
@@ -52,7 +46,7 @@ SpawnerConfig Spawner_GetDefaultConfig(SpawnerPattern pattern)
 		break;
 	case SPAWNER_PATTERN_SPIRAL:
 		config.cooldown = 0.08f;
-		config.bulletCount = 4;
+		config.bulletCount = 2;
 		config.bulletSpeed = 120.0f;
 		config.spreadAngle = 0;
 		config.rotationSpeed = 180.0f;
@@ -63,7 +57,7 @@ SpawnerConfig Spawner_GetDefaultConfig(SpawnerPattern pattern)
 		break;
 	case SPAWNER_PATTERN_WAVE:
 		config.cooldown = 0.4f;
-		config.bulletCount = 7;
+		config.bulletCount = 3;
 		config.bulletSpeed = 100.0f;
 		config.spreadAngle = 60.0f;
 		config.rotationSpeed = 90.0f;
@@ -74,7 +68,7 @@ SpawnerConfig Spawner_GetDefaultConfig(SpawnerPattern pattern)
 		break;
 	case SPAWNER_PATTERN_BURST:
 		config.cooldown = 1.5f;
-		config.bulletCount = 24;
+		config.bulletCount = 12;
 		config.bulletSpeed = 180.0f;
 		config.spreadAngle = 360.0f;
 		config.rotationSpeed = 0;
@@ -126,6 +120,9 @@ void Spawner_Update(BulletSpawner *spawner, Bullet bullets[], int *bulletCount,
 {
 	if (!spawner->active)
 		return;
+	// Stop spawning if too many bullets exist
+	if (*bulletCount >= MAX_BULLETS - 20)
+		return;
 	spawner->timer += dt;
 	spawner->angleOffset += dt * spawner->rotationSpeed;
 	if (spawner->timer >= spawner->cooldown)
@@ -150,9 +147,6 @@ void Spawner_Update(BulletSpawner *spawner, Bullet bullets[], int *bulletCount,
 			Spawner_PatternTargeting(spawner, bullets, bulletCount, playerPos);
 			break;
 		}
-		printf("[DEBUG] Spawner fired! Pattern=%d, Created %d bullets (total: "
-		       "%d)\n",
-		       spawner->pattern, *bulletCount - oldBulletCount, *bulletCount);
 	}
 }
 void Spawner_Draw(const BulletSpawner *spawner)
@@ -287,12 +281,14 @@ void Bullet_Update(Bullet bullets[], int *bulletCount, float dt)
 			continue;
 		bullets[i].position.x += bullets[i].velocity.x * dt;
 		bullets[i].position.y += bullets[i].velocity.y * dt;
-		if (bullets[i].position.x < -200 || bullets[i].position.x > 10000 ||
-		    bullets[i].position.y < -200 || bullets[i].position.y > 10000)
+		// Tighter bounds checking for better performance
+		if (bullets[i].position.x < -100 || bullets[i].position.x > 5000 ||
+		    bullets[i].position.y < -100 || bullets[i].position.y > 5000)
 		{
 			bullets[i].active = false;
 		}
 	}
+	// Remove inactive bullets to prevent array growth
 	int writeIndex = 0;
 	for (int readIndex = 0; readIndex < *bulletCount; readIndex++)
 	{
@@ -309,6 +305,9 @@ void Bullet_Update(Bullet bullets[], int *bulletCount, float dt)
 }
 void Bullet_Draw(const Bullet bullets[], int bulletCount)
 {
+	// Early exit if no bullets
+	if (bulletCount == 0)
+		return;
 	for (int i = 0; i < bulletCount; i++)
 	{
 		if (!bullets[i].active)

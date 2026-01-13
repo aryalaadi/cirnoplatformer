@@ -296,21 +296,23 @@ void Level_Unload(Level *lvl)
 }
 void Level_Draw(const Level *lvl, const Assets *assets, Camera2D camera)
 {
-	int startX = (int)(camera.target.x - SCREEN_WIDTH / 2) / TILE_SIZE - 1;
-	int endX = (int)(camera.target.x + SCREEN_WIDTH / 2) / TILE_SIZE + 2;
-	int startY = (int)(camera.target.y - SCREEN_HEIGHT / 2) / TILE_SIZE - 1;
-	int endY = (int)(camera.target.y + SCREEN_HEIGHT / 2) / TILE_SIZE + 2;
+	// Better culling calculations with zoom support
+	int startX = (int)(camera.target.x - SCREEN_WIDTH / camera.zoom / 2) / TILE_SIZE - 1;
+	int endX = (int)(camera.target.x + SCREEN_WIDTH / camera.zoom / 2) / TILE_SIZE + 2;
+	int startY = (int)(camera.target.y - SCREEN_HEIGHT / camera.zoom / 2) / TILE_SIZE - 1;
+	int endY = (int)(camera.target.y + SCREEN_HEIGHT / camera.zoom / 2) / TILE_SIZE + 2;
+	// Clamp to valid ranges
 	if (startX < 0)
 		startX = 0;
-	if (endX > lvl->width)
-		endX = lvl->width;
+	if (endX >= lvl->width)
+		endX = lvl->width - 1;
 	if (startY < 0)
 		startY = 0;
-	if (endY > lvl->height)
-		endY = lvl->height;
-	for (int y = startY; y < endY; y++)
+	if (endY >= lvl->height)
+		endY = lvl->height - 1;
+	for (int y = startY; y <= endY; y++)
 	{
-		for (int x = startX; x < endX; x++)
+		for (int x = startX; x <= endX; x++)
 		{
 			int bgTile = lvl->backgroundTiles[y][x];
 			if (bgTile > 0)
@@ -323,9 +325,9 @@ void Level_Draw(const Level *lvl, const Assets *assets, Camera2D camera)
 			}
 		}
 	}
-	for (int y = startY; y < endY; y++)
+	for (int y = startY; y <= endY; y++)
 	{
-		for (int x = startX; x < endX; x++)
+		for (int x = startX; x <= endX; x++)
 		{
 			int tile = lvl->tiles[y][x];
 			if (tile > 0)
