@@ -13,7 +13,8 @@ typedef enum
 	ANIM_WALL_CLING,
 	ANIM_FLOAT,
 	ANIM_DAMAGE,
-	ANIM_DEATH
+	ANIM_DEATH,
+	ANIM_DUCK
 } PlayerAnimState;
 typedef struct
 {
@@ -46,6 +47,7 @@ typedef struct
 	Texture2D spriteSheet;
 	bool hasSprite;
 	bool isSlowingDown;
+	bool isDucking;
 } Player;
 void Player_Init(Player *p, Vector2 spawn);
 void Player_Update(Player *p, float dt, Assets *assets,

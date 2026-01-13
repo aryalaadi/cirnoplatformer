@@ -2,8 +2,6 @@
 #define SPAWNER_H
 #include "config.h"
 #include "raylib.h"
-#define MAX_BULLETS 300
-#define MAX_SPAWNERS 30
 typedef struct
 {
 	float cooldown;

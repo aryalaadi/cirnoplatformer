@@ -49,6 +49,7 @@ void Player_Init(Player *p, Vector2 spawn)
 	p->facingRight = true;
 	p->hasSprite = false;
 	p->isSlowingDown = false;
+	p->isDucking = false;
 	if (FileExists("assets/sprites/player.png"))
 	{
 		p->spriteSheet = LoadTexture("assets/sprites/player.png");
@@ -83,18 +84,18 @@ void Player_Update(Player *p, float dt, Assets *assets, const KeyBindings *keys)
 	}
 	if (p->onGround)
 	{
-		p->coyoteTime = 0.15f;
+		p->coyoteTime = PLAYER_COYOTE_TIME;
 	}
 	if (p->onWall && !p->onGround)
 	{
-		p->wallJumpTime = 0.2f;
+		p->wallJumpTime = PLAYER_WALL_JUMP_TIME;
 	}
 	if (IsKeyPressed(keys->floatKey) && !p->onGround && !p->isFloating &&
 	    p->floatCooldown <= 0)
 	{
 		p->isFloating = true;
-		p->floatTimer = 2.5f;
-		p->floatCooldown = 4.0f;
+		p->floatTimer = PLAYER_FLOAT_DURATION;
+		p->floatCooldown = PLAYER_FLOAT_COOLDOWN;
 		p->velocity.y = 0;
 	}
 	bool wantsToCling = IsKeyDown(keys->wallCling);
@@ -103,7 +104,7 @@ void Player_Update(Player *p, float dt, Assets *assets, const KeyBindings *keys)
 		if (!p->isClinging)
 		{
 			p->isClinging = true;
-			p->clingTimer = 2.0f;
+			p->clingTimer = PLAYER_WALL_CLING_DURATION;
 		}
 		if (p->isFloating)
 		{
@@ -121,20 +122,23 @@ void Player_Update(Player *p, float dt, Assets *assets, const KeyBindings *keys)
 	bool movingUp =
 	    IsKeyDown(keys->jump) || IsKeyDown(KEY_W) || IsKeyDown(KEY_UP);
 	bool movingDown = IsKeyDown(KEY_DOWN);
+	
+	// Duck mode: holding down key while on ground
+	p->isDucking = IsKeyDown(KEY_DOWN) && p->onGround;
 	if (IsKeyPressed(keys->dash) && p->dashCooldown <= 0 && p->canDash &&
 	    !p->isFloating)
 	{
-		p->dashCooldown = 1.0f;
-		p->dashTimer = 0.15f;
-		float dashSpeed = PLAYER_SPEED * 2.0f;
+		p->dashCooldown = PLAYER_DASH_COOLDOWN;
+		p->dashTimer = PLAYER_DASH_DURATION;
+		float dashSpeed = PLAYER_SPEED * PLAYER_DASH_SPEED_MULTIPLIER;
 		Vector2 dashDir = {0, 0};
 		if (movingLeft)
 			dashDir.x = -1;
 		if (movingRight)
 			dashDir.x = 1;
-		if (movingUp)
+		if (movingUp && !p->isDucking)
 			dashDir.y = -1;
-		if (movingDown)
+		if (movingDown && !p->isDucking)
 			dashDir.y = 1;
 		if (dashDir.x == 0 && dashDir.y == 0)
 		{
@@ -157,6 +161,7 @@ void Player_Update(Player *p, float dt, Assets *assets, const KeyBindings *keys)
 	if (p->dashTimer <= 0 && !p->isFloating)
 	{
 		p->velocity.x = 0;
+		// Duck mode: only horizontal movement allowed
 		if (movingLeft)
 		{
 			p->velocity.x -= PLAYER_SPEED;
@@ -173,18 +178,18 @@ void Player_Update(Player *p, float dt, Assets *assets, const KeyBindings *keys)
 		p->velocity.x = 0;
 		if (movingLeft)
 		{
-			p->velocity.x -= PLAYER_SPEED * 0.5f;
+			p->velocity.x -= PLAYER_SPEED * PLAYER_FLOAT_SPEED_MULTIPLIER;
 			p->facingRight = false;
 		}
 		if (movingRight)
 		{
-			p->velocity.x += PLAYER_SPEED * 0.5f;
+			p->velocity.x += PLAYER_SPEED * PLAYER_FLOAT_SPEED_MULTIPLIER;
 			p->facingRight = true;
 		}
 	}
 	if (IsKeyDown(keys->slowDown))
 	{
-		p->velocity.x *= 0.5f;
+		p->velocity.x *= PLAYER_SLOWDOWN_MULTIPLIER;
 		p->isSlowingDown = true;
 	}
 	else
@@ -195,7 +200,12 @@ void Player_Update(Player *p, float dt, Assets *assets, const KeyBindings *keys)
 	    keys->jump); //|| IsKeyPressed(KEY_W) || IsKeyPressed(KEY_UP);
 	if (jumpPressed)
 	{
-		p->jumpBufferTime = 0.1f;
+		p->jumpBufferTime = PLAYER_JUMP_BUFFER_TIME;
+		// Exit duck mode when jumping
+		if (p->isDucking)
+		{
+			p->isDucking = false;
+		}
 		if (p->isFloating)
 		{
 			p->isFloating = false;
@@ -208,7 +218,7 @@ void Player_Update(Player *p, float dt, Assets *assets, const KeyBindings *keys)
 		float jumpSpeed = PLAYER_JUMP_SPEED;
 		if (p->lastTileStanding == TILE_JUMP_BOOST)
 		{
-			jumpSpeed *= 1.5f;
+			jumpSpeed *= TILE_JUMP_BOOST_MULTIPLIER;
 		}
 		p->velocity.y = -jumpSpeed;
 		p->onGround = false;
@@ -223,7 +233,7 @@ void Player_Update(Player *p, float dt, Assets *assets, const KeyBindings *keys)
 	         !p->onGround)
 	{
 		p->velocity.y = -PLAYER_JUMP_SPEED;
-		p->velocity.x = p->wallDirection * PLAYER_SPEED * 1.5f;
+		p->velocity.x = p->wallDirection * PLAYER_SPEED * PLAYER_WALL_JUMP_SPEED_MULTIPLIER;
 		p->wallJumpTime = 0;
 		p->jumpBufferTime = 0;
 		p->onWall = false;
@@ -244,6 +254,10 @@ void Player_Update(Player *p, float dt, Assets *assets, const KeyBindings *keys)
 	if (!Player_IsAlive(p))
 	{
 		newState = ANIM_DEATH;
+	}
+	else if (p->isDucking)
+	{
+		newState = ANIM_DUCK;
 	}
 	else if (p->isFloating)
 	{
@@ -321,6 +335,9 @@ void Player_Update(Player *p, float dt, Assets *assets, const KeyBindings *keys)
 	case ANIM_DEATH:
 		frameRate = 6.0f;
 		break;
+	case ANIM_DUCK:
+		frameRate = 4.0f;
+		break;
 	}
 	p->animTimer += dt;
 	if (p->animTimer >= 1.0f / frameRate)
@@ -356,6 +373,9 @@ void Player_Update(Player *p, float dt, Assets *assets, const KeyBindings *keys)
 			break;
 		case ANIM_DEATH:
 			maxFrames = 4;
+			break;
+		case ANIM_DUCK:
+			maxFrames = 2;
 			break;
 		}
 		if (p->animFrame >= maxFrames)
@@ -410,6 +430,15 @@ void Player_Draw(const Player *p)
 		}
 		DrawTexturePro(p->spriteSheet, sourceRect, destRect, origin, 0.0f,
 		               tint);
+		
+		// Draw hitbox visualization when ducking or slowing down (for sprite players)
+		if (p->isDucking || p->isSlowingDown)
+		{
+			Rectangle hitbox = Player_GetBounds(p);
+			Color hitboxColor = p->isDucking ? (Color){255, 200, 0, 100} : (Color){0, 255, 255, 100};
+			DrawRectangleRec(hitbox, hitboxColor);
+			DrawRectangleLinesEx(hitbox, 2, (Color){hitboxColor.r, hitboxColor.g, hitboxColor.b, 255});
+		}
 	}
 	else
 	{
@@ -443,6 +472,9 @@ void Player_Draw(const Player *p)
 		case ANIM_DEATH:
 			playerColor = DARKGRAY;
 			break;
+		case ANIM_DUCK:
+			playerColor = (Color){255, 150, 150, 255};
+			break;
 		}
 		if (p->invulnerabilityTimer > 0 &&
 		    ((int)(p->invulnerabilityTimer * 20) % 2 == 0))
@@ -466,6 +498,7 @@ void Player_Draw(const Player *p)
 			              PLAYER_SIZE + 8, PLAYER_SIZE + 8,
 			              (Color){135, 206, 235, 120});
 		}
+		
 		DrawRectangle((int)p->position.x, (int)p->position.y, PLAYER_SIZE,
 		              PLAYER_SIZE, playerColor);
 		int triSize = 5;
@@ -545,8 +578,38 @@ void Player_Draw(const Player *p)
 		DrawRectangle((int)p->position.x, (int)p->position.y + PLAYER_SIZE + 2,
 		              barWidth, 3, SKYBLUE);
 	}
+	
+	// Draw hitbox visualization ON TOP when ducking or slowing down (for all players)
+	if (p->isDucking || p->isSlowingDown)
+	{
+		Rectangle hitbox = Player_GetBounds(p);
+		Color hitboxColor = p->isDucking ? (Color){255, 200, 0, 100} : (Color){0, 255, 255, 100};
+		DrawRectangleRec(hitbox, hitboxColor);
+		DrawRectangleLinesEx(hitbox, 2, (Color){hitboxColor.r, hitboxColor.g, hitboxColor.b, 255});
+	}
 }
 Rectangle Player_GetBounds(const Player *p)
 {
-	return (Rectangle){p->position.x, p->position.y, PLAYER_SIZE, PLAYER_SIZE};
+	// Base hitbox is 80% of sprite size (20px instead of 25px)
+	float hitboxWidth = PLAYER_SIZE * 0.8f;
+	float hitboxHeight = PLAYER_SIZE * 0.85f; // Slightly taller: 85% instead of 80%
+	
+	// When ducking, reduce height to 50%
+	if (p->isDucking)
+	{
+		hitboxHeight = PLAYER_SIZE * 0.5f; // Slightly taller: 50% instead of 40%
+	}
+	
+	// When slowing down, further reduce hitbox to 80% (total 64% of original)
+	if (p->isSlowingDown)
+	{
+		hitboxWidth *= 0.8f;
+		hitboxHeight *= 0.8f;
+	}
+	
+	// Center the smaller hitbox within the sprite
+	float offsetX = (PLAYER_SIZE - hitboxWidth) / 2.0f;
+	float offsetY = PLAYER_SIZE - hitboxHeight; // Align to bottom
+	
+	return (Rectangle){p->position.x + offsetX, p->position.y + offsetY, hitboxWidth, hitboxHeight};
 }

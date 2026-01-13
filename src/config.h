@@ -3,46 +3,129 @@
 #include "raylib.h"
 #include <stdbool.h>
 
-// This is the default game res, too but will do for now.
+//=============================================================================
+// DISPLAY SETTINGS
+//=============================================================================
 #define SCREEN_WIDTH 800
 #define SCREEN_HEIGHT 600
-
-// Might have to change this depending on how I want to balance the game.
-#define TILE_SIZE 50
 #define TARGET_FPS 60
 
-// 128x128 should be more enough, Larger levels sound fun but not efficient
-// give how my engine is rendering levels.
+//=============================================================================
+// TILE AND WORLD SETTINGS
+//=============================================================================
+#define TILE_SIZE 50
 #define MIN_WORLD_WIDTH 20
 #define MIN_WORLD_HEIGHT 15
 #define MAX_WORLD_WIDTH 128
 #define MAX_WORLD_HEIGHT 128
+#define BACKGROUND_TILE_START 20
 
-// Cirno is small, this is also the hitbox size.
+//=============================================================================
+// PLAYER SETTINGS
+//=============================================================================
 #define PLAYER_SIZE 25
-
-// Dont ask why.
-#define MAX_LEVELS 100
-
-// Probably Have to tweak this to balance.
-#define PLAYER_SPEED 250.0f
-#define PLAYER_JUMP_SPEED 350.0f
-#define GRAVITY 1200.0f
 #define PLAYER_MAX_HEALTH 3
 
-// Random numbers for now
-#define MAX_MUSIC_FILES 50
-#define MAX_ENTITIES 100
-#define MAX_SAVE_SLOTS 5
+// Player Movement
+#define PLAYER_SPEED 250.0f
+#define PLAYER_JUMP_SPEED 350.0f
+#define PLAYER_WALL_JUMP_SPEED_MULTIPLIER 1.5f
+#define PLAYER_DASH_SPEED_MULTIPLIER 2.0f
+#define PLAYER_FLOAT_SPEED_MULTIPLIER 0.5f
+#define PLAYER_SLOWDOWN_MULTIPLIER 0.5f
 
-// TODO: Right now only 9 levels, more worlds and more level
+// Player Timers
+#define PLAYER_DASH_COOLDOWN 1.0f
+#define PLAYER_DASH_DURATION 0.15f
+#define PLAYER_FLOAT_DURATION 2.5f
+#define PLAYER_FLOAT_COOLDOWN 4.0f
+#define PLAYER_COYOTE_TIME 0.15f
+#define PLAYER_JUMP_BUFFER_TIME 0.1f
+#define PLAYER_WALL_JUMP_TIME 0.2f
+#define PLAYER_WALL_CLING_DURATION 2.0f
+#define PLAYER_INVULNERABILITY_TIME 1.5f
+
+// Player Animation Settings
+#define PLAYER_ANIM_FRAME_DURATION 0.1f
+#define PLAYER_SPRITE_FRAME_WIDTH 32
+#define PLAYER_SPRITE_FRAME_HEIGHT 32
+
+//=============================================================================
+// PHYSICS SETTINGS
+//=============================================================================
+#define GRAVITY 1200.0f
+#define WALL_SLIDE_GRAVITY_MULTIPLIER 0.3f
+#define TERMINAL_VELOCITY 800.0f
+
+//=============================================================================
+// GAME PROGRESSION
+//=============================================================================
+#define MAX_LEVELS 100
 #define BASE_LEVEL_COUNT 9
-
-// TODO: Implement mulitple worlds and custom worlds
-#define BACKGROUND_TILE_START 20
 #define BASE_WORLD_COUNT 9
 #define LEVELS_PER_WORLD 9
 #define MAX_CUSTOM_WORLDS 100
+#define MAX_SAVE_SLOTS 5
+
+//=============================================================================
+// ENTITY LIMITS
+//=============================================================================
+#define MAX_ENTITIES 100
+#define MAX_MUSIC_FILES 50
+#define MAX_BULLETS 500
+#define MAX_SPAWNERS 50
+
+//=============================================================================
+// UI SETTINGS
+//=============================================================================
+#define UI_PAUSE_MENU_X (SCREEN_WIDTH / 2 - 100)
+#define UI_PAUSE_MENU_Y 200
+#define UI_PAUSE_MENU_ITEM_HEIGHT 40
+#define UI_PAUSE_MENU_FONT_SIZE 28
+
+#define UI_MENU_TITLE_Y 80
+#define UI_MENU_TITLE_FONT_SIZE 30
+#define UI_MENU_ITEM_START_Y 200
+#define UI_MENU_ITEM_HEIGHT 40
+#define UI_MENU_ITEM_FONT_SIZE 28
+
+#define UI_HEALTH_X 20
+#define UI_HEALTH_Y 20
+#define UI_HEALTH_HEART_SIZE 30
+#define UI_HEALTH_HEART_SPACING 10
+
+#define UI_TIMER_X (SCREEN_WIDTH - 150)
+#define UI_TIMER_Y 20
+#define UI_TIMER_FONT_SIZE 24
+
+#define UI_DEATH_COUNT_X 20
+#define UI_DEATH_COUNT_Y (SCREEN_HEIGHT - 50)
+#define UI_DEATH_COUNT_FONT_SIZE 20
+
+//=============================================================================
+// EDITOR SETTINGS
+//=============================================================================
+#define EDITOR_TILE_SCROLL_SPEED 50.0f
+#define EDITOR_CAMERA_SPEED 400.0f
+#define EDITOR_STATUS_MESSAGE_DURATION 3.0f
+#define EDITOR_UI_PANEL_WIDTH 250
+#define EDITOR_UI_PANEL_HEIGHT 600
+#define EDITOR_TILE_PREVIEW_SIZE 40
+
+//=============================================================================
+// TIMING CONSTANTS
+//=============================================================================
+#define LEVEL_COMPLETE_DELAY 2.0f
+#define DEATH_SCREEN_DELAY 1.5f
+#define ACHIEVEMENT_NOTIFICATION_DURATION 5.0f
+#define CREDITS_SCROLL_SPEED 50.0f
+
+//=============================================================================
+// TILE EFFECTS
+//=============================================================================
+#define TILE_JUMP_BOOST_MULTIPLIER 1.5f
+#define TILE_DAMAGE_AMOUNT 1
+#define TILE_SPIKE_DAMAGE_AMOUNT 1
 
 // These are the indexes for the basic tiles, I will have to add more.
 // TODO: tiles related to ice (slippery)

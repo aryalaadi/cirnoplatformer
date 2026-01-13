@@ -20,7 +20,9 @@
 // level editor.
 // TODO: move the level editor to a different source file.
 #include "game.h"
+#include "editor.h"
 #include "menu.h"
+#include "draw.h"
 #include "save.h"
 #include "vn.h"
 #include <stdio.h>
@@ -38,53 +40,7 @@
 #define RAYGUI_IMPLEMENTATION
 // This is for the level editor GUI, but I might consider using nuklear instead.
 #include "raygui.h"
-
-typedef struct
-{
-	Level level;
-	Assets assets;
-	Camera2D camera;
-	int selectedTile;
-	char levelName[256];
-	char levelNameBuffer[256];
-	int levelWidth;
-	int levelHeight;
-	int currentLevelIndex;
-	int totalLevelFiles;
-	char levelFiles[MAX_LEVELS][256];
-	bool uiInteracting;
-	bool needsRefresh;
-	char statusMessage[256];
-	float statusTimer;
-	bool editingBackground;
-	bool vnEditorOpen;
-	int selectedDialogue;
-	char vnCharNameBuffer[32];
-	char vnTextBuffer[256];
-	char vnSpriteBuffer[64];
-	int vnBgColorIndex;
-	bool vnEditingCharName;
-	bool vnEditingText;
-	bool vnEditingSprite;
-	float vnScrollOffset;
-	float tileScrollOffset;
-} LevelEditor;
-
-// Game menu options.
-typedef enum
-{
-	PAUSE_RESUME,
-	PAUSE_SAVE,
-	PAUSE_MENU,
-	PAUSE_QUIT
-} PauseOption;
-// Level editor menu options.
-typedef enum
-{
-	SAVE_MENU_NONE,
-	SAVE_MENU_SAVE,
-	SAVE_MENU_LOAD
-} SaveMenuState;
+#include "editor.h"
 
 static GameState currentState;
 static GameData gameData;
@@ -101,8 +57,6 @@ static float creditsScrollY = 0;
 
 static Settings *settings = NULL;
 
-static int pauseSelection = 0;
-static int editorPauseSelection = 0;
 // Nothing will be selected on default, of course stupid.
 static SaveMenuState saveMenuState = SAVE_MENU_NONE;
 
@@ -115,7 +69,6 @@ static Texture2D menuBgAllStages;
 static Texture2D menuBgPerfect;
 static bool menuBgLoaded = false;
 static float achievementNotifTimer = 0;
-static const float ACHIEVEMENT_NOTIF_DURATION = 5.0f;
 
 void Game_Init(void)
 {
@@ -134,6 +87,7 @@ void Game_Init(void)
 
 	InitAudioDevice();
 	Menu_Init();
+	Pause_Init();
 	settings = Menu_GetSettings();
 	currentState = STATE_MENU;
 	worldLoaded = false;
@@ -189,59 +143,6 @@ void Game_Init(void)
 	}
 }
 
-void Editor_RefreshLevelList(void)
-{
-	FilePathList files = LoadDirectoryFiles("assets/levels");
-	editor.totalLevelFiles = 0;
-	for (unsigned int i = 0;
-	     i < files.count && editor.totalLevelFiles < MAX_LEVELS; i++)
-	{
-		const char *ext = GetFileExtension(files.paths[i]);
-		if (TextIsEqual(ext, ".lvl"))
-		{
-			strncpy(editor.levelFiles[editor.totalLevelFiles], files.paths[i],
-			        255);
-			editor.totalLevelFiles++;
-		}
-	}
-	UnloadDirectoryFiles(files);
-	editor.needsRefresh = false;
-}
-void Editor_NewLevel(void)
-{
-	Level_Unload(&editor.level);
-	Level_Create(&editor.level, 30, 20);
-	strcpy(editor.levelName, "newlevel");
-	strcpy(editor.levelNameBuffer, "newlevel");
-	editor.currentLevelIndex = -1;
-	strcpy(editor.statusMessage, "Created new level");
-	editor.statusTimer = 3.0f;
-}
-void Editor_SaveLevel(void)
-{
-	char filepath[512];
-	snprintf(filepath, sizeof(filepath), "assets/levels/%s.lvl",
-	         editor.levelName);
-	Level_SaveToFile(&editor.level, filepath);
-	snprintf(editor.statusMessage, sizeof(editor.statusMessage), "Saved: %s",
-	         editor.levelName);
-	editor.statusTimer = 3.0f;
-	editor.needsRefresh = true;
-}
-void Editor_LoadLevel(int index)
-{
-	if (index < 0 || index >= editor.totalLevelFiles)
-		return;
-	Level_Unload(&editor.level);
-	Level_LoadFromFile(&editor.level, editor.levelFiles[index]);
-	const char *fname = GetFileNameWithoutExt(editor.levelFiles[index]);
-	strncpy(editor.levelName, fname, 255);
-	strncpy(editor.levelNameBuffer, fname, 255);
-	editor.currentLevelIndex = index;
-	snprintf(editor.statusMessage, sizeof(editor.statusMessage), "Loaded: %s",
-	         editor.levelName);
-	editor.statusTimer = 3.0f;
-}
 void Game_ShowSaveMenu(void)
 {
 	saveMenuState = SAVE_MENU_SAVE;
@@ -282,7 +183,7 @@ void Game_StartNewWithName(void)
 	gameData.isValid = true;
 	World_Load(&world, gameData.currentLevel);
 	worldLoaded = true;
-	pauseSelection = 0;
+	Pause_SetSelection(0);
 	if (world.level.hasVisualNovel && world.level.dialogueCount > 0)
 	{
 		VN_Init(&vnState, &world.level);
@@ -323,7 +224,7 @@ void Game_PauseToggle(void)
 	if (currentState == STATE_PLAYING)
 	{
 		currentState = STATE_PAUSED;
-		pauseSelection = 0;
+		Pause_SetSelection(0);
 	}
 	else if (currentState == STATE_PAUSED)
 	{
@@ -343,7 +244,7 @@ void Game_NextLevel(void)
 		    &gameData.achievements, gameData.levelDeaths, gameData.totalLevels);
 		if (gameData.achievements.newUnlock)
 		{
-			achievementNotifTimer = ACHIEVEMENT_NOTIF_DURATION;
+			achievementNotifTimer = ACHIEVEMENT_NOTIFICATION_DURATION;
 			gameData.achievements.newUnlock = false;
 		}
 		Game_SaveProgress();
@@ -378,17 +279,17 @@ void Game_StartLevelEditor(void)
 	if (!editorLoaded)
 	{
 		Assets_Load(&editor.assets);
-		Editor_RefreshLevelList();
+		Editor_RefreshLevelList(&editor);
 		editor.currentLevelIndex = -1;
 		editor.levelWidth = 30;
 		editor.levelHeight = 20;
 		if (editor.totalLevelFiles > 0)
 		{
-			Editor_LoadLevel(0);
+			Editor_LoadLevel(&editor, 0);
 		}
 		else
 		{
-			Editor_NewLevel();
+			Editor_NewLevel(&editor);
 		}
 		editor.selectedTile = TILE_GRASS;
 		editor.uiInteracting = false;
@@ -414,7 +315,7 @@ void Game_StartLevelEditor(void)
 		editorLoaded = true;
 	}
 	currentState = STATE_LEVEL_EDITOR;
-	editorPauseSelection = 0;
+	EditorPause_SetSelection(0);
 }
 
 // This is what the main game Loop runs.
@@ -567,7 +468,7 @@ void Game_Update(void)
 	{
 		if (editor.needsRefresh)
 		{
-			Editor_RefreshLevelList();
+			Editor_RefreshLevelList(&editor);
 		}
 		if (editor.statusTimer > 0)
 		{
@@ -646,22 +547,20 @@ void Game_Update(void)
 	}
 	else if (currentState == STATE_EDITOR_PAUSED)
 	{
-		if (IsKeyPressed(KEY_DOWN))
-			editorPauseSelection = (editorPauseSelection + 1) % 3;
-		if (IsKeyPressed(KEY_UP))
-			editorPauseSelection = (editorPauseSelection + 2) % 3;
+		EditorPause_Update();
 		if (IsKeyPressed(KEY_ENTER))
 		{
-			if (editorPauseSelection == 0)
+			int selection = EditorPause_GetSelection();
+			if (selection == EDITOR_PAUSE_RESUME)
 			{
 				currentState = STATE_LEVEL_EDITOR;
 			}
-			else if (editorPauseSelection == 1)
+			else if (selection == EDITOR_PAUSE_SAVE)
 			{
-				Editor_SaveLevel();
+				Editor_SaveLevel(&editor);
 				currentState = STATE_LEVEL_EDITOR;
 			}
-			else if (editorPauseSelection == 2)
+			else if (selection == EDITOR_PAUSE_MENU)
 			{
 				currentState = STATE_MENU;
 			}
@@ -700,7 +599,7 @@ void Game_Update(void)
 			    gameData.levelDeaths[gameData.currentLevel]);
 			if (gameData.achievements.newUnlock)
 			{
-				achievementNotifTimer = ACHIEVEMENT_NOTIF_DURATION;
+				achievementNotifTimer = ACHIEVEMENT_NOTIFICATION_DURATION;
 				gameData.achievements.newUnlock = false;
 			}
 			gameData.currentLevel++;
@@ -713,21 +612,19 @@ void Game_Update(void)
 	}
 	else if (currentState == STATE_PAUSED)
 	{
-		if (IsKeyPressed(settings->keys.menuDown) || IsKeyPressed(KEY_DOWN))
-			pauseSelection = (pauseSelection + 1) % 3;
-		if (IsKeyPressed(settings->keys.menuUp) || IsKeyPressed(KEY_UP))
-			pauseSelection = (pauseSelection + 2) % 3;
+		Pause_Update(&settings->keys);
 		if (IsKeyPressed(settings->keys.menuSelect) || IsKeyPressed(KEY_ENTER))
 		{
-			if (pauseSelection == 0)
+			int selection = Pause_GetSelection();
+			if (selection == PAUSE_RESUME)
 			{
 				Game_PauseToggle();
 			}
-			else if (pauseSelection == 1)
+			else if (selection == PAUSE_SAVE)
 			{
 				Game_SaveProgress();
 			}
-			else if (pauseSelection == 2)
+			else if (selection == PAUSE_MENU)
 			{
 				if (worldLoaded)
 				{
@@ -1053,12 +950,12 @@ void Game_Draw(void)
 		if (GuiButton((Rectangle){SCREEN_WIDTH - 250, yPos, 115, 30},
 		              "New Level"))
 		{
-			Editor_NewLevel();
+			Editor_NewLevel(&editor);
 		}
 		if (GuiButton((Rectangle){SCREEN_WIDTH - 130, yPos, 115, 30},
 		              "Save Level"))
 		{
-			Editor_SaveLevel();
+			Editor_SaveLevel(&editor);
 		}
 		yPos += 40;
 		GuiLine((Rectangle){SCREEN_WIDTH - 250, yPos, 240, 1}, NULL);
@@ -1071,21 +968,21 @@ void Game_Draw(void)
 		{
 			if (editor.currentLevelIndex > 0)
 			{
-				Editor_LoadLevel(editor.currentLevelIndex - 1);
+				Editor_LoadLevel(&editor, editor.currentLevelIndex - 1);
 			}
 		}
 		if (GuiButton((Rectangle){SCREEN_WIDTH - 130, yPos, 115, 30}, "Next >"))
 		{
 			if (editor.currentLevelIndex < editor.totalLevelFiles - 1)
 			{
-				Editor_LoadLevel(editor.currentLevelIndex + 1);
+				Editor_LoadLevel(&editor, editor.currentLevelIndex + 1);
 			}
 		}
 		yPos += 35;
 		if (GuiButton((Rectangle){SCREEN_WIDTH - 250, yPos, 240, 25},
 		              "Refresh List"))
 		{
-			Editor_RefreshLevelList();
+			Editor_RefreshLevelList(&editor);
 		}
 		yPos += 35;
 		if (GuiButton((Rectangle){SCREEN_WIDTH - 250, yPos, 240, 30},
@@ -1395,18 +1292,7 @@ void Game_Draw(void)
 		         editor.editingBackground ? SKYBLUE : GOLD);
 		if (currentState == STATE_EDITOR_PAUSED)
 		{
-			DrawRectangle(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT,
-			              (Color){0, 0, 0, 180});
-			DrawText("EDITOR MENU", SCREEN_WIDTH / 2 - 100,
-			         SCREEN_HEIGHT / 2 - 100, 40, YELLOW);
-			const char *editorOptions[] = {"Resume", "Save Level",
-			                               "Exit to Menu"};
-			for (int i = 0; i < 3; i++)
-			{
-				Color c = (i == editorPauseSelection) ? YELLOW : WHITE;
-				DrawText(editorOptions[i], SCREEN_WIDTH / 2 - 80,
-				         SCREEN_HEIGHT / 2 - 20 + i * 35, 24, c);
-			}
+			EditorPause_Draw();
 		}
 		if (editor.vnEditorOpen)
 		{
@@ -1770,18 +1656,7 @@ void Game_Draw(void)
 		         10, 60, 20, GREEN);
 		if (currentState == STATE_PAUSED)
 		{
-			DrawRectangle(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT,
-			              (Color){0, 0, 0, 180});
-			DrawText("PAUSED", SCREEN_WIDTH / 2 - 80, SCREEN_HEIGHT / 2 - 100,
-			         40, YELLOW);
-			const char *pauseOptions[] = {"Resume", "Save Game",
-			                              "Quit to Menu"};
-			for (int i = 0; i < 3; i++)
-			{
-				Color c = (i == pauseSelection) ? YELLOW : WHITE;
-				DrawText(pauseOptions[i], SCREEN_WIDTH / 2 - 80,
-				         SCREEN_WIDTH / 2 - 20 + i * 35, 24, c);
-			}
+			Pause_Draw();
 		}
 	}
 	else if (currentState == STATE_LEVEL_COMPLETE)
@@ -1840,7 +1715,7 @@ void Game_Draw(void)
 		{
 			float alpha =
 			    (achievementNotifTimer > 4.5f)
-			        ? ((ACHIEVEMENT_NOTIF_DURATION - achievementNotifTimer) /
+			        ? ((ACHIEVEMENT_NOTIFICATION_DURATION - achievementNotifTimer) /
 			           0.5f)
 			    : (achievementNotifTimer < 0.5f)
 			        ? (achievementNotifTimer / 0.5f)
