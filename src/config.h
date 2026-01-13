@@ -58,6 +58,13 @@
 #define TERMINAL_VELOCITY 800.0f
 
 //=============================================================================
+// WORLD BOUNDS
+//=============================================================================
+#define OUT_OF_BOUNDS_MARGIN 200.0f  // Extra space below level before death
+#define OUT_OF_BOUNDS_TOP_MARGIN 100.0f  // Extra space above level
+#define OUT_OF_BOUNDS_SIDE_MARGIN 100.0f  // Extra space on sides
+
+//=============================================================================
 // GAME PROGRESSION
 //=============================================================================
 #define MAX_LEVELS 100

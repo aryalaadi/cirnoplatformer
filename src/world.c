@@ -68,6 +68,13 @@ void World_Update(World *world, float dt, const KeyBindings *keys)
 	Physics_ApplyGravity(&world->player, dt);
 	Physics_MoveX(&world->player, &world->level, dt);
 	Physics_MoveY(&world->player, &world->level, dt);
+	
+	// Check if player has fallen out of bounds
+	if (World_IsPlayerOutOfBounds(world))
+	{
+		world->player.health = 0;  // Instant death
+		return;
+	}
 	// Only update spawners within range of player for performance
 	Vector2 playerPos = world->player.position;
 	for (int i = 0; i < world->spawnerCount; i++)
@@ -158,6 +165,32 @@ void World_Update(World *world, float dt, const KeyBindings *keys)
 		world->camera.target.y =
 		    world->level.height * TILE_SIZE - SCREEN_HEIGHT / 2;
 }
+
+bool World_IsPlayerOutOfBounds(const World *world)
+{
+	Rectangle playerBounds = Player_GetBounds(&world->player);
+	float levelWidth = world->level.width * TILE_SIZE;
+	float levelHeight = world->level.height * TILE_SIZE;
+	
+	// Check bottom boundary (most common - player falls off)
+	if (playerBounds.y > levelHeight + OUT_OF_BOUNDS_MARGIN)
+		return true;
+	
+	// Check top boundary
+	if (playerBounds.y + playerBounds.height < -OUT_OF_BOUNDS_TOP_MARGIN)
+		return true;
+	
+	// Check left boundary
+	if (playerBounds.x + playerBounds.width < -OUT_OF_BOUNDS_SIDE_MARGIN)
+		return true;
+	
+	// Check right boundary
+	if (playerBounds.x > levelWidth + OUT_OF_BOUNDS_SIDE_MARGIN)
+		return true;
+	
+	return false;
+}
+
 void World_Draw(const World *world)
 {
 	BeginMode2D(world->camera);
