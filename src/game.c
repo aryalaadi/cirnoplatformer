@@ -685,9 +685,12 @@ void Game_Update(void)
 				achievementNotifTimer = ACHIEVEMENT_NOTIFICATION_DURATION;
 				gameData.achievements.newUnlock = false;
 			}
-			gameData.currentLevel++;
+			
+			// Save progress with current level complete
 			Game_SaveProgress();
-			gameData.currentLevel--;
+			
+			// Move to next level
+			gameData.currentLevel++;
 			Assets_PlayLevelCompleteSound(&world.assets);
 			currentState = STATE_LEVEL_COMPLETE;
 			levelCompleteTimer = 0;
@@ -1934,7 +1937,7 @@ void Game_Draw(void)
 		DrawText(TextFormat("Health: %d/%d", world.player.health,
 		                    world.player.maxHealth),
 		         10, 60, 20, GREEN);
-		DrawText(TextFormat("Health Points: %d/%d", gameData.healthPoints % HEALTH_POINTS_PER_HEAL, HEALTH_POINTS_PER_HEAL),
+		DrawText(TextFormat("Health Points: %d/%d", gameData.healthPoints, HEALTH_POINTS_PER_HEAL),
 		         10, 85, 18, HEALTH_POINT_COLOR);
 		DrawText(TextFormat("Score: %d", gameData.currentLevelScore),
 		         10, 105, 18, SCORE_ITEM_COLOR);

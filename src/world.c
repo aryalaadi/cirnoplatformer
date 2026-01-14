@@ -38,16 +38,31 @@ void World_Load(World *world, int levelIndex)
 		for (int x = 0; x < world->level.width; x++)
 		{
 			int tile = Level_GetTile(&world->level, x, y);
-			SpawnerPattern pattern = (SpawnerPattern)-1;
+			SpawnerPattern pattern = SPAWNER_PATTERN_CIRCLE; // Default value
+			bool isSpawnerTile = false;
+			
 			if (tile == TILE_SPAWNER_CIRCLE)
+			{
 				pattern = SPAWNER_PATTERN_CIRCLE;
+				isSpawnerTile = true;
+			}
 			else if (tile == TILE_SPAWNER_SPIRAL)
+			{
 				pattern = SPAWNER_PATTERN_SPIRAL;
+				isSpawnerTile = true;
+			}
 			else if (tile == TILE_SPAWNER_WAVE)
+			{
 				pattern = SPAWNER_PATTERN_WAVE;
+				isSpawnerTile = true;
+			}
 			else if (tile == TILE_SPAWNER_BURST)
+			{
 				pattern = SPAWNER_PATTERN_BURST;
-			if (pattern >= 0 && world->spawnerCount < MAX_SPAWNERS)
+				isSpawnerTile = true;
+			}
+			
+			if (isSpawnerTile && world->spawnerCount < MAX_SPAWNERS)
 			{
 				Vector2 pos = {x * TILE_SIZE, y * TILE_SIZE};
 				Spawner_Init(&world->spawners[world->spawnerCount], pos,
