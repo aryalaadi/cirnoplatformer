@@ -21,6 +21,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+// Comparison function for sorting level filenames
+static int CompareFilenames(const void *a, const void *b)
+{
+	const char *str_a = (const char *)a;
+	const char *str_b = (const char *)b;
+	return strcmp(str_a, str_b);
+}
+
 void Level_Create(Level *lvl, int width, int height)
 {
 	if (width < MIN_WORLD_WIDTH)
@@ -40,10 +49,28 @@ void Level_Create(Level *lvl, int width, int height)
 	lvl->dialogueCount = 0;
 	lvl->tiles = (int **)malloc(lvl->height * sizeof(int *));
 	lvl->backgroundTiles = (int **)malloc(lvl->height * sizeof(int *));
+	if (!lvl->tiles || !lvl->backgroundTiles)
+	{
+		if (lvl->tiles) free(lvl->tiles);
+		if (lvl->backgroundTiles) free(lvl->backgroundTiles);
+		return;
+	}
 	for (int y = 0; y < lvl->height; y++)
 	{
 		lvl->tiles[y] = (int *)calloc(lvl->width, sizeof(int));
 		lvl->backgroundTiles[y] = (int *)calloc(lvl->width, sizeof(int));
+		if (!lvl->tiles[y] || !lvl->backgroundTiles[y])
+		{
+			// Cleanup on failure
+			for (int j = 0; j <= y; j++)
+			{
+				if (lvl->tiles[j]) free(lvl->tiles[j]);
+				if (lvl->backgroundTiles[j]) free(lvl->backgroundTiles[j]);
+			}
+			free(lvl->tiles);
+			free(lvl->backgroundTiles);
+			return;
+		}
 	}
 }
 int Level_CountFiles(void)
@@ -83,10 +110,32 @@ void Level_LoadFromFile(Level *lvl, const char *filepath)
 	}
 	lvl->tiles = (int **)malloc(lvl->height * sizeof(int *));
 	lvl->backgroundTiles = (int **)malloc(lvl->height * sizeof(int *));
+	if (!lvl->tiles || !lvl->backgroundTiles)
+	{
+		if (lvl->tiles) free(lvl->tiles);
+		if (lvl->backgroundTiles) free(lvl->backgroundTiles);
+		fclose(f);
+		Level_Create(lvl, 30, 20);
+		return;
+	}
 	for (int y = 0; y < lvl->height; y++)
 	{
 		lvl->tiles[y] = (int *)malloc(lvl->width * sizeof(int));
 		lvl->backgroundTiles[y] = (int *)malloc(lvl->width * sizeof(int));
+		if (!lvl->tiles[y] || !lvl->backgroundTiles[y])
+		{
+			// Cleanup on failure
+			for (int j = 0; j <= y; j++)
+			{
+				if (lvl->tiles[j]) free(lvl->tiles[j]);
+				if (lvl->backgroundTiles[j]) free(lvl->backgroundTiles[j]);
+			}
+			free(lvl->tiles);
+			free(lvl->backgroundTiles);
+			fclose(f);
+			Level_Create(lvl, 30, 20);
+			return;
+		}
 		fread(lvl->tiles[y], sizeof(int), lvl->width, f);
 		fread(lvl->backgroundTiles[y], sizeof(int), lvl->width, f);
 	}
@@ -116,162 +165,40 @@ void Level_SaveToFile(const Level *lvl, const char *filepath)
 	}
 	fclose(f);
 }
-static const char *level_templates[5] = {"000000000000000000000000000000"
-                                         "000000000000000000000000000000"
-                                         "000000000000000000000000000000"
-                                         "000000000000000000000000000000"
-                                         "000000000000000000000000000000"
-                                         "000000000000000000000000000000"
-                                         "000000000000000000000000000000"
-                                         "000000000000000000000000000000"
-                                         "000000000000000000000000000000"
-                                         "000000000000001110000000000000"
-                                         "000000000000000000000000000000"
-                                         "000000000000000000000000011100"
-                                         "000000000000000000000000000000"
-                                         "000000000000000000000000000000"
-                                         "000000000000000000000000000004"
-                                         "000000111100000000000001111111"
-                                         "000000000000000000000011111111"
-                                         "000000000000000111111111111111"
-                                         "011111111111111111111111111111"
-                                         "111111111111111111111111111111",
-                                         "000000000000000000000000000000"
-                                         "000000000000000000000000000000"
-                                         "000000000000000000000000000000"
-                                         "000000000000000000000000000000"
-                                         "000000000000000000000000000000"
-                                         "000000000000000000000000000000"
-                                         "000000000000000000000000000000"
-                                         "000000000000000000000000000000"
-                                         "000000000000000000000000000400"
-                                         "000000000000000111000000011100"
-                                         "000000000000000000000000000000"
-                                         "000000000111000000000000000000"
-                                         "000000000000000000000011100000"
-                                         "000000000000000000000000000000"
-                                         "000000000000000111000000000000"
-                                         "000000000000000000000000000000"
-                                         "000011100000000000000000000000"
-                                         "000000000000000000001110000000"
-                                         "011100000000000000000000000000"
-                                         "111111111111111111111111111111",
-                                         "000000000000000000000000000000"
-                                         "000000000000000000000000000000"
-                                         "000000000000000000000000000000"
-                                         "000000000000000000000000000000"
-                                         "000000000000000000000000000000"
-                                         "000000000000000000000000000000"
-                                         "000000000000000000000000000000"
-                                         "000000000000000000000000000000"
-                                         "000000000000000000000000000000"
-                                         "000000000000000000000000000400"
-                                         "000000000000000000000000001110"
-                                         "000000000000000000000000000000"
-                                         "000000000000000000111000000000"
-                                         "000000000000000000000000000000"
-                                         "000000000111100000000000000000"
-                                         "000000000000000000000000000000"
-                                         "000111100000000000000000000000"
-                                         "000000000000000000000000000000"
-                                         "011000000000000000000001100000"
-                                         "111111111000000000001111111111",
-                                         "000000000000000000000000000000"
-                                         "000000000000000000000000000000"
-                                         "000000000000000000000000000000"
-                                         "000000000000000000000000000400"
-                                         "000000000000000000000000001110"
-                                         "000000000000000000000000000000"
-                                         "000000000000000000000111100000"
-                                         "000000000000000000000000000000"
-                                         "000000000000000011110000000000"
-                                         "000000000000000000000000000000"
-                                         "000000000001111000000000000000"
-                                         "000000000000000000000000000000"
-                                         "000000111100000000000000000000"
-                                         "000000000000000000000000000000"
-                                         "000111000000000000000000000000"
-                                         "000000000000000000000000000000"
-                                         "011000000000000000000000000000"
-                                         "110000000000000000000000000000"
-                                         "100000000000000000000000000000"
-                                         "111111111111111111111111111111",
-                                         "000000000000000000000000000000"
-                                         "000000000000000000000000000000"
-                                         "000000000000000000000000000000"
-                                         "000000000000000000000000000000"
-                                         "000000000000000000000000000000"
-                                         "000000000000000000000000000400"
-                                         "000000000000000000000000001110"
-                                         "000000000000000000000000000000"
-                                         "000000000000000000001100000000"
-                                         "000000000000000000000000000000"
-                                         "000000000000001110000000000000"
-                                         "000000000000000000000000000000"
-                                         "000000001100000000000000000000"
-                                         "000000000000000000000000000000"
-                                         "000011100000000000001100000000"
-                                         "000000000000000000000000000000"
-                                         "001100000000001100000000000000"
-                                         "000000000000000000000000000000"
-                                         "011000000110000000000000000000"
-                                         "111111111111111111111111111111"};
 void Level_Load(Level *lvl, int index)
 {
 	FilePathList files = LoadDirectoryFiles("assets/levels");
 	int levelCount = 0;
 	char levelFiles[MAX_LEVELS][256];
+	
+	// Collect all .lvl files
 	for (unsigned int i = 0; i < files.count && levelCount < MAX_LEVELS; i++)
 	{
 		const char *ext = GetFileExtension(files.paths[i]);
 		if (TextIsEqual(ext, ".lvl"))
 		{
 			strncpy(levelFiles[levelCount], files.paths[i], 255);
+			levelFiles[levelCount][255] = '\0';
 			levelCount++;
 		}
 	}
 	UnloadDirectoryFiles(files);
+	
+	// Sort level files alphabetically
+	if (levelCount > 0)
+	{
+		qsort(levelFiles, levelCount, sizeof(levelFiles[0]), CompareFilenames);
+	}
+	
+	// Load the level if index is valid
 	if (index >= 0 && index < levelCount)
 	{
 		Level_LoadFromFile(lvl, levelFiles[index]);
 		return;
 	}
-	if (index >= 0 && index < 5)
-	{
-		lvl->width = 30;
-		lvl->height = 20;
-		lvl->playerSpawn = (Vector2){100, 100};
-		lvl->hasGoal = false;
-		lvl->musicFile[0] = '\0';
-		lvl->hasVisualNovel = false;
-		lvl->dialogueCount = 0;
-		lvl->tiles = (int **)malloc(lvl->height * sizeof(int *));
-		lvl->backgroundTiles = (int **)malloc(lvl->height * sizeof(int *));
-		for (int y = 0; y < lvl->height; y++)
-		{
-			lvl->tiles[y] = (int *)calloc(lvl->width, sizeof(int));
-			lvl->backgroundTiles[y] = (int *)calloc(lvl->width, sizeof(int));
-		}
-		const char *template = level_templates[index];
-		for (int y = 0; y < lvl->height; y++)
-		{
-			for (int x = 0; x < lvl->width; x++)
-			{
-				int idx = y * lvl->width + x;
-				int tile = template[idx] - '0';
-				lvl->tiles[y][x] = tile;
-				if (tile == TILE_GOAL)
-				{
-					lvl->goalPos = (Vector2){x * TILE_SIZE, y * TILE_SIZE};
-					lvl->hasGoal = true;
-				}
-			}
-		}
-	}
-	else
-	{
-		Level_Create(lvl, 30, 20);
-	}
+	
+	// If no level file exists, create an empty level
+	Level_Create(lvl, 30, 20);
 }
 void Level_Unload(Level *lvl)
 {

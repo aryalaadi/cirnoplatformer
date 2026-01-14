@@ -92,13 +92,14 @@ void World_Update(World *world, float dt, const KeyBindings *keys)
 	}
 	// Only update spawners within range of player for performance
 	Vector2 playerPos = world->player.position;
+	const float MAX_SPAWNER_DIST_SQ = 2250000.0f; // 1500^2 (~30 tiles)
 	for (int i = 0; i < world->spawnerCount; i++)
 	{
 		float dx = world->spawners[i].position.x - playerPos.x;
 		float dy = world->spawners[i].position.y - playerPos.y;
 		float distSq = dx * dx + dy * dy;
-		// Only update spawners within ~30 tiles (1500 pixels)
-		if (distSq < 2250000.0f) // 1500^2
+		// Only update spawners within range
+		if (distSq < MAX_SPAWNER_DIST_SQ)
 		{
 			Spawner_Update(&world->spawners[i], world->bullets, &world->bulletCount,
 			               world->collectibles, &world->collectibleCount,

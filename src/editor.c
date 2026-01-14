@@ -19,11 +19,22 @@
 #include "editor.h"
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
+
+// Comparison function for sorting level filenames
+static int CompareFilenames(const void *a, const void *b)
+{
+	const char *str_a = (const char *)a;
+	const char *str_b = (const char *)b;
+	return strcmp(str_a, str_b);
+}
 
 void Editor_RefreshLevelList(LevelEditor *editor)
 {
 	FilePathList files = LoadDirectoryFiles("assets/levels");
 	editor->totalLevelFiles = 0;
+	
+	// Collect all .lvl files
 	for (unsigned int i = 0;
 	     i < files.count && editor->totalLevelFiles < MAX_LEVELS; i++)
 	{
@@ -32,10 +43,19 @@ void Editor_RefreshLevelList(LevelEditor *editor)
 		{
 			strncpy(editor->levelFiles[editor->totalLevelFiles], files.paths[i],
 			        255);
+			editor->levelFiles[editor->totalLevelFiles][255] = '\0';
 			editor->totalLevelFiles++;
 		}
 	}
 	UnloadDirectoryFiles(files);
+	
+	// Sort level files alphabetically
+	if (editor->totalLevelFiles > 0)
+	{
+		qsort(editor->levelFiles, editor->totalLevelFiles, 
+		      sizeof(editor->levelFiles[0]), CompareFilenames);
+	}
+	
 	editor->needsRefresh = false;
 }
 
@@ -70,7 +90,9 @@ void Editor_LoadLevel(LevelEditor *editor, int index)
 	Level_LoadFromFile(&editor->level, editor->levelFiles[index]);
 	const char *fname = GetFileNameWithoutExt(editor->levelFiles[index]);
 	strncpy(editor->levelName, fname, 255);
+	editor->levelName[255] = '\0';
 	strncpy(editor->levelNameBuffer, fname, 255);
+	editor->levelNameBuffer[255] = '\0';
 	editor->currentLevelIndex = index;
 	snprintf(editor->statusMessage, sizeof(editor->statusMessage), "Loaded: %s",
 	         editor->levelName);

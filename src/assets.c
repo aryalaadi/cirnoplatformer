@@ -86,6 +86,7 @@ void Assets_Load(Assets *assets)
 		{
 			strncpy(assets->musicFiles[assets->musicFileCount].filename,
 			        GetFileName(musicFiles.paths[i]), 255);
+			assets->musicFiles[assets->musicFileCount].filename[255] = '\0';
 			assets->musicFiles[assets->musicFileCount].music =
 			    LoadMusicStream(musicFiles.paths[i]);
 			assets->musicFileCount++;

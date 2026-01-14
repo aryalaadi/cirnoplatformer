@@ -689,8 +689,7 @@ void Game_Update(void)
 			// Save progress with current level complete
 			Game_SaveProgress();
 			
-			// Move to next level
-			gameData.currentLevel++;
+			// Transition to level complete screen (Game_NextLevel will increment currentLevel)
 			Assets_PlayLevelCompleteSound(&world.assets);
 			currentState = STATE_LEVEL_COMPLETE;
 			levelCompleteTimer = 0;
