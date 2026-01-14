@@ -142,6 +142,10 @@ void World_Update(World *world, float dt, const KeyBindings *keys)
 					world->bullets[i].velocity.x *= -PARRIED_BULLET_SPEED_MULTIPLIER;
 					world->bullets[i].velocity.y *= -PARRIED_BULLET_SPEED_MULTIPLIER;
 					world->bullets[i].isParried = true;
+					
+					// Spawn health point reward at parry location
+					Collectible_Spawn(world->collectibles, &world->collectibleCount,
+					                 world->bullets[i].position, COLLECTIBLE_HEALTH_POINT);
 				}
 				else
 				{
@@ -314,6 +318,7 @@ void World_Draw(const World *world)
 	Bullet_Draw(world->bullets, world->bulletCount);
 	Collectible_Draw(world->collectibles, world->collectibleCount);
 	Player_Draw(&world->player);
+	Player_DrawHitbox(&world->player);
 	EndMode2D();
 }
 bool World_LevelCompleted(const World *world)

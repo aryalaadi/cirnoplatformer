@@ -1925,7 +1925,7 @@ void Game_Draw(void)
 	else if (currentState == STATE_PLAYING || currentState == STATE_PAUSED)
 	{
 		World_Draw(&world);
-		DrawRectangle(0, 0, 360, 155, (Color){0, 0, 0, 150});
+		DrawRectangle(0, 0, 360, 155, (Color){0, 0, 0, 200});
 		DrawText(TextFormat("FPS: %d", GetFPS()), 280, 125, 18, LIGHTGRAY);
 		DrawText(TextFormat("Level: %d/%d", gameData.currentLevel + 1,
 		                    gameData.totalLevels),

@@ -134,8 +134,17 @@ void Player_Update(Player *p, float dt, Assets *assets, const KeyBindings *keys)
 	    IsKeyDown(keys->jump) || IsKeyDown(KEY_W) || IsKeyDown(KEY_UP);
 	bool movingDown = IsKeyDown(KEY_DOWN);
 	
-	// Duck mode: holding down key while on ground
-	p->isDucking = IsKeyDown(KEY_DOWN) && p->onGround;
+	// Duck mode: sticky behavior - once ducking, stay ducking until key released
+	if (IsKeyDown(KEY_DOWN) && p->onGround)
+	{
+		p->isDucking = true;
+	}
+	else if (!IsKeyDown(KEY_DOWN))
+	{
+		p->isDucking = false;
+	}
+	// else: maintain current isDucking state if key held but not on ground
+	
 	if (IsKeyPressed(keys->dash) && p->dashCooldown <= 0 && p->canDash &&
 	    !p->isFloating)
 	{
@@ -453,15 +462,6 @@ void Player_Draw(const Player *p)
 		}
 		DrawTexturePro(p->spriteSheet, sourceRect, destRect, origin, 0.0f,
 		               tint);
-		
-		// Draw hitbox visualization when ducking or slowing down (for sprite players)
-		if (p->isDucking || p->isSlowingDown)
-		{
-			Rectangle hitbox = Player_GetBounds(p);
-			Color hitboxColor = p->isDucking ? (Color){255, 200, 0, 100} : (Color){0, 255, 255, 100};
-			DrawRectangleRec(hitbox, hitboxColor);
-			DrawRectangleLinesEx(hitbox, 2, (Color){hitboxColor.r, hitboxColor.g, hitboxColor.b, 255});
-		}
 	}
 	else
 	{
@@ -601,16 +601,31 @@ void Player_Draw(const Player *p)
 		DrawRectangle((int)p->position.x, (int)p->position.y + PLAYER_SIZE + 2,
 		              barWidth, 3, SKYBLUE);
 	}
-	
-	// Draw hitbox visualization ON TOP when ducking or slowing down (for all players)
+}
+
+void Player_DrawHitbox(const Player *p)
+{
+	// Draw hitbox visualization when ducking or slowing down
 	if (p->isDucking || p->isSlowingDown)
 	{
 		Rectangle hitbox = Player_GetBounds(p);
-		Color hitboxColor = p->isDucking ? (Color){255, 200, 0, 100} : (Color){0, 255, 255, 100};
+		Color hitboxColor;
+		
+		// Prioritize duck visualization if both are active
+		if (p->isDucking)
+		{
+			hitboxColor = (Color){255, 200, 0, 120};
+		}
+		else if (p->isSlowingDown)
+		{
+			hitboxColor = (Color){0, 255, 255, 120};
+		}
+		
 		DrawRectangleRec(hitbox, hitboxColor);
 		DrawRectangleLinesEx(hitbox, 2, (Color){hitboxColor.r, hitboxColor.g, hitboxColor.b, 255});
 	}
 }
+
 Rectangle Player_GetBounds(const Player *p)
 {
 	// Base hitbox is 80% of sprite size (20px instead of 25px)

@@ -244,8 +244,10 @@ void Level_Draw(const Level *lvl, const Assets *assets, Camera2D camera)
 			int bgTile = lvl->backgroundTiles[y][x];
 			if (bgTile > 0)
 			{
-				Rectangle dst = {x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE,
-				                 TILE_SIZE};
+				// Use integer coordinates and add 0.5f to prevent gaps between tiles
+				float posX = (float)(x * TILE_SIZE);
+				float posY = (float)(y * TILE_SIZE);
+				Rectangle dst = {posX, posY, (float)TILE_SIZE + 0.5f, (float)TILE_SIZE + 0.5f};
 				DrawRectangleRec(dst, (Color){100, 100, 150, 100});
 				DrawText(TextFormat("%d", bgTile), x * TILE_SIZE + 5,
 				         y * TILE_SIZE + 5, 12, (Color){255, 255, 255, 150});
@@ -259,8 +261,10 @@ void Level_Draw(const Level *lvl, const Assets *assets, Camera2D camera)
 			int tile = lvl->tiles[y][x];
 			if (tile > 0)
 			{
-				Rectangle dst = {x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE,
-				                 TILE_SIZE};
+				// Use integer coordinates and add 0.5f to prevent gaps between tiles
+				float posX = (float)(x * TILE_SIZE);
+				float posY = (float)(y * TILE_SIZE);
+				Rectangle dst = {posX, posY, (float)TILE_SIZE + 0.5f, (float)TILE_SIZE + 0.5f};
 				if (tile == TILE_SPAWNER_CIRCLE)
 				{
 					DrawRectangleRec(dst, (Color){50, 50, 50, 255});

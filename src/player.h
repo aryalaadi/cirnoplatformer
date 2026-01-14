@@ -57,6 +57,7 @@ void Player_Init(Player *p, Vector2 spawn);
 void Player_Update(Player *p, float dt, Assets *assets,
                    const KeyBindings *keys);
 void Player_Draw(const Player *p);
+void Player_DrawHitbox(const Player *p);
 void Player_TakeDamage(Player *p, int amount);
 void Player_Heal(Player *p, int amount);
 bool Player_IsAlive(const Player *p);
