@@ -19,6 +19,7 @@
 #include "world.h"
 #include "config.h"
 #include "physics.h"
+#include <math.h>
 #include <stdio.h>
 void World_Load(World *world, int levelIndex)
 {
@@ -32,6 +33,7 @@ void World_Load(World *world, int levelIndex)
 	world->spawnerCount = 0;
 	world->bulletCount = 0;
 	world->collectibleCount = 0;
+	world->parryEffectCount = 0;
 
 	for (int y = 0; y < world->level.height; y++)
 	{
@@ -113,19 +115,84 @@ void World_Update(World *world, float dt, const KeyBindings *keys)
 	}
 	Bullet_Update(world->bullets, &world->bulletCount, dt);
 	Collectible_Update(world->collectibles, &world->collectibleCount, dt);
+	
 	Rectangle playerBounds = Player_GetBounds(&world->player);
+	
+	// Get current input state for parry detection
+	bool movingLeft = IsKeyDown(keys->moveLeft) || IsKeyDown(KEY_LEFT);
+	bool movingRight = IsKeyDown(keys->moveRight) || IsKeyDown(KEY_RIGHT);
+	
 	// Only check bullet collisions if bullets exist
 	if (world->bulletCount > 0)
 	{
 		for (int i = 0; i < world->bulletCount; i++)
 		{
+			// Skip parried bullets - they only hit spawners now
+			if (world->bullets[i].isParried)
+				continue;
+			
 			if (Bullet_CheckCollision(&world->bullets[i], playerBounds))
 			{
-				Player_TakeDamage(&world->player, 1);
-				world->bullets[i].active = false;
+				// Check if player can parry this bullet
+				if (Player_CanParryBullet(&world->player, world->bullets[i].velocity, 
+				                         movingLeft, movingRight))
+				{
+					// Parry successful! Reflect bullet back in opposite direction
+					// Simply reverse the velocity and multiply by speed multiplier
+					world->bullets[i].velocity.x *= -PARRIED_BULLET_SPEED_MULTIPLIER;
+					world->bullets[i].velocity.y *= -PARRIED_BULLET_SPEED_MULTIPLIER;
+					world->bullets[i].isParried = true;
+				}
+				else
+				{
+					// Normal hit - take damage
+					Player_TakeDamage(&world->player, 1);
+					world->bullets[i].active = false;
+				}
 			}
 		}
 	}
+	
+	// Check parried bullet collisions with spawners
+	for (int i = 0; i < world->bulletCount; i++)
+	{
+		if (!world->bullets[i].isParried || !world->bullets[i].active)
+			continue;
+		
+		// Check collision with all spawners
+		for (int j = 0; j < world->spawnerCount; j++)
+		{
+			if (!world->spawners[j].active)
+				continue;
+			
+			// Create rectangle for spawner hitbox (50x50 tile)
+			Rectangle spawnerBounds = {
+				world->spawners[j].position.x,
+				world->spawners[j].position.y,
+				50, 50
+			};
+			
+			// Check if bullet hits spawner
+			float closestX = fmaxf(spawnerBounds.x,
+			                      fminf(world->bullets[i].position.x, 
+			                            spawnerBounds.x + spawnerBounds.width));
+			float closestY = fmaxf(spawnerBounds.y,
+			                      fminf(world->bullets[i].position.y, 
+			                            spawnerBounds.y + spawnerBounds.height));
+			float dx = world->bullets[i].position.x - closestX;
+			float dy = world->bullets[i].position.y - closestY;
+			float distance = sqrtf(dx * dx + dy * dy);
+			
+			if (distance < world->bullets[i].radius)
+			{
+				// Hit! Damage spawner and destroy bullet
+				Spawner_TakeDamage(&world->spawners[j], 1);
+				world->bullets[i].active = false;
+				break; // Bullet can only hit one spawner
+			}
+		}
+	}
+	
 	int tileX = (int)((playerBounds.x + playerBounds.width / 2) / TILE_SIZE);
 	int tileY = (int)((playerBounds.y + playerBounds.height) / TILE_SIZE);
 	int tile = Level_GetTile(&world->level, tileX, tileY);
@@ -265,6 +332,13 @@ void World_ResetBullets(World *world)
 	for (int i = 0; i < MAX_BULLETS; i++)
 	{
 		world->bullets[i].active = false;
+	}
+	
+	// Also reset parry effects
+	world->parryEffectCount = 0;
+	for (int i = 0; i < MAX_PARRY_EFFECTS; i++)
+	{
+		world->parryEffects[i].active = false;
 	}
 
 	// reset the timer so player doesnt die on respawn

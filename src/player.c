@@ -50,6 +50,9 @@ void Player_Init(Player *p, Vector2 spawn)
 	p->hasSprite = false;
 	p->isSlowingDown = false;
 	p->isDucking = false;
+	p->parryWindowTimer = 0;
+	p->parryCooldown = 0;
+	p->isParryActive = false;
 	if (FileExists("assets/sprites/player.png"))
 	{
 		p->spriteSheet = LoadTexture("assets/sprites/player.png");
@@ -78,6 +81,14 @@ void Player_Update(Player *p, float dt, Assets *assets, const KeyBindings *keys)
 		p->damageTimer -= dt;
 	if (p->clingTimer > 0)
 		p->clingTimer -= dt;
+	if (p->parryWindowTimer > 0)
+		p->parryWindowTimer -= dt;
+	if (p->parryCooldown > 0)
+		p->parryCooldown -= dt;
+	
+	// Update parry active state
+	p->isParryActive = (p->parryWindowTimer > 0);
+	
 	if (p->isFloating && p->floatTimer <= 0)
 	{
 		p->isFloating = false;
@@ -191,6 +202,18 @@ void Player_Update(Player *p, float dt, Assets *assets, const KeyBindings *keys)
 	{
 		p->velocity.x *= PLAYER_SLOWDOWN_MULTIPLIER;
 		p->isSlowingDown = true;
+		
+		// Parry mechanic: slowdown + directional input
+		// Activate parry window if cooldown is ready and player is holding slowdown + direction
+		if (p->parryCooldown <= 0 && (movingLeft || movingRight))
+		{
+			// Only activate parry if it's not already active
+			if (p->parryWindowTimer <= 0)
+			{
+				p->parryWindowTimer = PARRY_WINDOW_TIME;
+				p->parryCooldown = PARRY_COOLDOWN;
+			}
+		}
 	}
 	else
 	{
@@ -612,4 +635,38 @@ Rectangle Player_GetBounds(const Player *p)
 	float offsetY = PLAYER_SIZE - hitboxHeight; // Align to bottom
 	
 	return (Rectangle){p->position.x + offsetX, p->position.y + offsetY, hitboxWidth, hitboxHeight};
+}
+
+bool Player_CanParryBullet(const Player *p, Vector2 bulletVelocity, bool movingLeft, bool movingRight)
+{
+	// Player must be in active parry window
+	if (!p->isParryActive || p->parryWindowTimer <= 0)
+		return false;
+	
+	// Player must be holding slowdown (already checked if we're here, but safety check)
+	if (!p->isSlowingDown)
+		return false;
+	
+	// Calculate angle of bullet's velocity (direction it's moving)
+	float bulletAngle = atan2f(bulletVelocity.y, bulletVelocity.x) * RAD2DEG;
+	
+	// Normalize angle to [0, 360)
+	if (bulletAngle < 0)
+		bulletAngle += 360.0f;
+	
+	// Determine which direction the bullet is traveling
+	// Moving right: angles from -90 to +90 (or 270 to 90 in normalized form)
+	// Moving left: angles from 90 to 270
+	bool bulletMovingRight = (bulletAngle >= 270.0f || bulletAngle < 90.0f);
+	bool bulletMovingLeft = (bulletAngle >= 90.0f && bulletAngle < 270.0f);
+	
+	// Parry succeeds if player is pressing opposite to bullet direction
+	// Bullet moving right -> player pressing left
+	// Bullet moving left -> player pressing right
+	if (bulletMovingRight && movingLeft)
+		return true;
+	if (bulletMovingLeft && movingRight)
+		return true;
+	
+	return false;
 }

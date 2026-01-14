@@ -48,6 +48,10 @@ typedef struct
 	bool hasSprite;
 	bool isSlowingDown;
 	bool isDucking;
+	// Parry system
+	float parryWindowTimer;   // Timer for active parry window
+	float parryCooldown;       // Cooldown between parry attempts
+	bool isParryActive;        // Whether player is currently in parry window
 } Player;
 void Player_Init(Player *p, Vector2 spawn);
 void Player_Update(Player *p, float dt, Assets *assets,
@@ -57,4 +61,5 @@ void Player_TakeDamage(Player *p, int amount);
 void Player_Heal(Player *p, int amount);
 bool Player_IsAlive(const Player *p);
 Rectangle Player_GetBounds(const Player *p);
+bool Player_CanParryBullet(const Player *p, Vector2 bulletVelocity, bool movingLeft, bool movingRight);
 #endif

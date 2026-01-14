@@ -16,6 +16,8 @@ typedef struct
 	int bulletCount;
 	Collectible collectibles[MAX_COLLECTIBLES];
 	int collectibleCount;
+	ParryEffect parryEffects[MAX_PARRY_EFFECTS];
+	int parryEffectCount;
 } World;
 void World_Load(World *world, int levelIndex);
 void World_Unload(World *world);

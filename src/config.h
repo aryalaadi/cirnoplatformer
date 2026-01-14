@@ -45,6 +45,11 @@
 #define PLAYER_WALL_CLING_DURATION 2.0f
 #define PLAYER_INVULNERABILITY_TIME 1.5f
 
+// Parry System
+#define PARRY_WINDOW_TIME 0.4f         // Time window to successfully parry (in seconds)
+#define PARRY_COOLDOWN 0.5f            // Cooldown between parry attempts
+#define PARRY_ANGLE_THRESHOLD 90.0f    // Angle threshold in degrees (90 = semicircle)
+
 // Player Animation Settings
 #define PLAYER_ANIM_FRAME_DURATION 0.1f
 #define PLAYER_SPRITE_FRAME_WIDTH 32
@@ -82,6 +87,20 @@
 #define MAX_BULLETS 500
 #define MAX_SPAWNERS 50
 #define MAX_COLLECTIBLES 200
+#define MAX_PARRY_EFFECTS 50
+
+//=============================================================================
+// PARRY EFFECT SYSTEM
+//=============================================================================
+#define PARRY_EFFECT_DURATION 0.3f      // How long the parry effect lasts
+#define PARRY_EFFECT_RADIUS 20.0f       // Size of parry effect
+#define PARRY_EFFECT_COLOR (Color){100, 200, 255, 200}  // Cyan-ish color
+
+//=============================================================================
+// SPAWNER SYSTEM
+//=============================================================================
+#define SPAWNER_INITIAL_HEALTH 5        // How many parried bullets to destroy spawner
+#define PARRIED_BULLET_SPEED_MULTIPLIER 1.5f  // Speed multiplier for reflected bullets
 
 //=============================================================================
 // COLLECTIBLE SYSTEM
@@ -221,6 +240,7 @@ typedef struct
 	float speedVariation;
 	Color bulletColor;
 	float bulletSize;
+	int health;  // Spawner health - decreases when hit by parried bullets
 } BulletSpawner;
 
 typedef struct
@@ -229,7 +249,16 @@ typedef struct
 	Vector2 velocity;
 	float radius;
 	bool active;
+	bool isParried;  // True if bullet was parried and is returning to spawner
 } Bullet;
+
+typedef struct
+{
+	Vector2 position;
+	float lifetime;
+	float radius;
+	bool active;
+} ParryEffect;
 
 // TODO: add a player movement multiplier to implement slipery ice
 typedef struct

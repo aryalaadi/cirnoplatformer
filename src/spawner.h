@@ -37,6 +37,15 @@ bool Collectible_CheckCollection(const Collectible *collectible, Rectangle playe
 void Collectible_Spawn(Collectible collectibles[], int *collectibleCount,
                        Vector2 position, CollectibleType type);
 
+// Parry effect functions
+void ParryEffect_Spawn(ParryEffect effects[], int *effectCount, Vector2 position);
+void ParryEffect_Update(ParryEffect effects[], int *effectCount, float dt);
+void ParryEffect_Draw(const ParryEffect effects[], int effectCount);
+
+// Spawner damage functions
+BulletSpawner* Spawner_FindNearest(BulletSpawner spawners[], int spawnerCount, Vector2 position);
+void Spawner_TakeDamage(BulletSpawner *spawner, int damage);
+
 // Config helpers
 SpawnerConfig Spawner_GetDefaultConfig(SpawnerPattern pattern);
 

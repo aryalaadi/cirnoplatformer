@@ -114,6 +114,7 @@ void Spawner_InitWithConfig(BulletSpawner *spawner, Vector2 position,
 	spawner->speedVariation = config.speedVariation;
 	spawner->bulletColor = config.bulletColor;
 	spawner->bulletSize = config.bulletSize;
+	spawner->health = SPAWNER_INITIAL_HEALTH;
 }
 void Spawner_Update(BulletSpawner *spawner, Bullet bullets[], int *bulletCount,
                     Collectible collectibles[], int *collectibleCount,
@@ -121,6 +122,14 @@ void Spawner_Update(BulletSpawner *spawner, Bullet bullets[], int *bulletCount,
 {
 	if (!spawner->active)
 		return;
+	
+	// Deactivate spawner if health is depleted
+	if (spawner->health <= 0)
+	{
+		spawner->active = false;
+		return;
+	}
+	
 	// Stop spawning if too many bullets exist
 	if (*bulletCount >= MAX_BULLETS - 20)
 		return;
@@ -185,6 +194,25 @@ void Spawner_Draw(const BulletSpawner *spawner)
 		                     center.y + sinf(angle) * 18};
 		DrawLineEx(center, indicator, 3, WHITE);
 	}
+	
+	// Draw health bar above spawner
+	if (spawner->health > 0 && spawner->health < SPAWNER_INITIAL_HEALTH)
+	{
+		float barWidth = 40.0f;
+		float barHeight = 4.0f;
+		float healthPercent = (float)spawner->health / (float)SPAWNER_INITIAL_HEALTH;
+		
+		Vector2 barPos = {center.x - barWidth / 2, center.y - 35};
+		
+		// Background
+		DrawRectangle((int)barPos.x, (int)barPos.y, (int)barWidth, (int)barHeight, DARKGRAY);
+		
+		// Health bar (green to red gradient based on health)
+		Color healthColor = (healthPercent > 0.5f) ? GREEN : 
+		                   (healthPercent > 0.25f) ? ORANGE : RED;
+		DrawRectangle((int)barPos.x, (int)barPos.y, 
+		             (int)(barWidth * healthPercent), (int)barHeight, healthColor);
+	}
 }
 void Spawner_PatternCircle(BulletSpawner *spawner, Bullet bullets[],
                            int *bulletCount)
@@ -241,7 +269,8 @@ void Spawner_PatternWave(BulletSpawner *spawner, Bullet bullets[],
 		bullets[*bulletCount] = (Bullet){.position = center,
 		                                 .velocity = velocity,
 		                                 .radius = spawner->bulletSize,
-		                                 .active = true};
+		                                 .active = true,
+		                                 .isParried = false};
 		(*bulletCount)++;
 	}
 }
@@ -263,7 +292,8 @@ void Spawner_PatternBurst(BulletSpawner *spawner, Bullet bullets[],
 		bullets[*bulletCount] = (Bullet){.position = center,
 		                                 .velocity = velocity,
 		                                 .radius = spawner->bulletSize,
-		                                 .active = true};
+		                                 .active = true,
+		                                 .isParried = false};
 		(*bulletCount)++;
 	}
 }
@@ -284,7 +314,8 @@ void Spawner_PatternTargeting(BulletSpawner *spawner, Bullet bullets[],
 		bullets[*bulletCount] = (Bullet){.position = center,
 		                                 .velocity = velocity,
 		                                 .radius = spawner->bulletSize,
-		                                 .active = true};
+		                                 .active = true,
+		                                 .isParried = false};
 		(*bulletCount)++;
 	}
 }
@@ -327,11 +358,26 @@ void Bullet_Draw(const Bullet bullets[], int bulletCount)
 	{
 		if (!bullets[i].active)
 			continue;
-		DrawCircleV(bullets[i].position, bullets[i].radius + 2,
-		            (Color){255, 255, 255, 50});
-		DrawCircleV(bullets[i].position, bullets[i].radius, RED);
-		DrawCircleV(bullets[i].position, bullets[i].radius - 1,
-		            (Color){255, 100, 100, 255});
+		
+		// Use different color for parried bullets
+		if (bullets[i].isParried)
+		{
+			// Cyan/blue color for parried bullets
+			DrawCircleV(bullets[i].position, bullets[i].radius + 2,
+			            (Color){100, 200, 255, 100});
+			DrawCircleV(bullets[i].position, bullets[i].radius, (Color){50, 150, 255, 255});
+			DrawCircleV(bullets[i].position, bullets[i].radius - 1,
+			            (Color){150, 220, 255, 255});
+		}
+		else
+		{
+			// Normal red bullets
+			DrawCircleV(bullets[i].position, bullets[i].radius + 2,
+			            (Color){255, 255, 255, 50});
+			DrawCircleV(bullets[i].position, bullets[i].radius, RED);
+			DrawCircleV(bullets[i].position, bullets[i].radius - 1,
+			            (Color){255, 100, 100, 255});
+		}
 	}
 }
 bool Bullet_CheckCollision(const Bullet *bullet, Rectangle playerBounds)
@@ -475,3 +521,115 @@ bool Collectible_CheckCollection(const Collectible *collectible, Rectangle playe
 	return distance < collectible->radius;
 }
 
+// Parry effect system implementation
+void ParryEffect_Spawn(ParryEffect effects[], int *effectCount, Vector2 position)
+{
+	if (*effectCount >= MAX_PARRY_EFFECTS)
+		return;
+	
+	effects[*effectCount] = (ParryEffect){
+		.position = position,
+		.lifetime = PARRY_EFFECT_DURATION,
+		.radius = PARRY_EFFECT_RADIUS,
+		.active = true
+	};
+	(*effectCount)++;
+}
+
+void ParryEffect_Update(ParryEffect effects[], int *effectCount, float dt)
+{
+	for (int i = 0; i < *effectCount; i++)
+	{
+		if (!effects[i].active)
+			continue;
+		
+		// Update lifetime
+		effects[i].lifetime -= dt;
+		if (effects[i].lifetime <= 0)
+		{
+			effects[i].active = false;
+		}
+		
+		// Expand radius slightly over time for visual effect
+		effects[i].radius += 20.0f * dt;
+	}
+	
+	// Remove inactive effects
+	int writeIndex = 0;
+	for (int readIndex = 0; readIndex < *effectCount; readIndex++)
+	{
+		if (effects[readIndex].active)
+		{
+			if (writeIndex != readIndex)
+			{
+				effects[writeIndex] = effects[readIndex];
+			}
+			writeIndex++;
+		}
+	}
+	*effectCount = writeIndex;
+}
+
+void ParryEffect_Draw(const ParryEffect effects[], int effectCount)
+{
+	for (int i = 0; i < effectCount; i++)
+	{
+		if (!effects[i].active)
+			continue;
+		
+		// Calculate alpha based on remaining lifetime
+		float alphaFactor = effects[i].lifetime / PARRY_EFFECT_DURATION;
+		Color effectColor = PARRY_EFFECT_COLOR;
+		effectColor.a = (unsigned char)(effectColor.a * alphaFactor);
+		
+		// Draw expanding ring effect
+		DrawCircleV(effects[i].position, effects[i].radius, 
+		           (Color){effectColor.r, effectColor.g, effectColor.b, (unsigned char)(effectColor.a * 0.3f)});
+		DrawCircleLines((int)effects[i].position.x, (int)effects[i].position.y, 
+		               effects[i].radius, effectColor);
+		DrawCircleLines((int)effects[i].position.x, (int)effects[i].position.y, 
+		               effects[i].radius - 2, effectColor);
+	}
+}
+
+// Spawner damage system
+BulletSpawner* Spawner_FindNearest(BulletSpawner spawners[], int spawnerCount, Vector2 position)
+{
+	if (spawnerCount == 0)
+		return NULL;
+	
+	BulletSpawner *nearest = NULL;
+	float minDistSq = INFINITY;
+	
+	for (int i = 0; i < spawnerCount; i++)
+	{
+		if (!spawners[i].active)
+			continue;
+		
+		Vector2 spawnerCenter = Vector2Add(spawners[i].position, (Vector2){25, 25});
+		float dx = spawnerCenter.x - position.x;
+		float dy = spawnerCenter.y - position.y;
+		float distSq = dx * dx + dy * dy;
+		
+		if (distSq < minDistSq)
+		{
+			minDistSq = distSq;
+			nearest = &spawners[i];
+		}
+	}
+	
+	return nearest;
+}
+
+void Spawner_TakeDamage(BulletSpawner *spawner, int damage)
+{
+	if (!spawner || !spawner->active)
+		return;
+	
+	spawner->health -= damage;
+	if (spawner->health <= 0)
+	{
+		spawner->active = false;
+		spawner->health = 0;
+	}
+}
