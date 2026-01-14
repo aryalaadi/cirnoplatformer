@@ -34,8 +34,8 @@ SpawnerConfig Spawner_GetDefaultConfig(SpawnerPattern pattern)
 	switch (pattern)
 	{
 	case SPAWNER_PATTERN_CIRCLE:
-		config.cooldown = 3.0f;
-		config.bulletCount = 4;
+		config.cooldown = 2.0f;
+		config.bulletCount = 5;
 		config.bulletSpeed = 150.0f;
 		config.spreadAngle = 360.0f;
 		config.rotationSpeed = 0;
@@ -45,8 +45,8 @@ SpawnerConfig Spawner_GetDefaultConfig(SpawnerPattern pattern)
 		config.bulletSize = 4.0f;
 		break;
 	case SPAWNER_PATTERN_SPIRAL:
-		config.cooldown = 2.0f;
-		config.bulletCount = 2;
+		config.cooldown = 1.0f;
+		config.bulletCount = 4;
 		config.bulletSpeed = 120.0f;
 		config.spreadAngle = 0;
 		config.rotationSpeed = 180.0f;
@@ -56,8 +56,8 @@ SpawnerConfig Spawner_GetDefaultConfig(SpawnerPattern pattern)
 		config.bulletSize = 4.0f;
 		break;
 	case SPAWNER_PATTERN_WAVE:
-		config.cooldown = 1.0f;
-		config.bulletCount = 3;
+		config.cooldown = 0.5f;
+		config.bulletCount = 4;
 		config.bulletSpeed = 100.0f;
 		config.spreadAngle = 60.0f;
 		config.rotationSpeed = 90.0f;
@@ -67,7 +67,7 @@ SpawnerConfig Spawner_GetDefaultConfig(SpawnerPattern pattern)
 		config.bulletSize = 6.0f;
 		break;
 	case SPAWNER_PATTERN_BURST:
-		config.cooldown = 1.5f;
+		config.cooldown = 0.5f;
 		config.bulletCount = 12;
 		config.bulletSpeed = 180.0f;
 		config.spreadAngle = 360.0f;

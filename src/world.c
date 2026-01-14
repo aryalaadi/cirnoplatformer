@@ -92,6 +92,11 @@ void World_Update(World *world, float dt, const KeyBindings *keys)
 	}
 	// Only update spawners within range of player for performance
 	Vector2 playerPos = world->player.position;
+
+
+
+
+
 	const float MAX_SPAWNER_DIST_SQ = 2250000.0f; // 1500^2 (~30 tiles)
 	for (int i = 0; i < world->spawnerCount; i++)
 	{
@@ -160,25 +165,50 @@ void World_Update(World *world, float dt, const KeyBindings *keys)
 		world->player.health = PLAYER_MAX_HEALTH;
 		world->player.invulnerabilityTimer = 0;
 	}
+	
+	// Calculate desired camera position (player center)
+	Vector2 desiredCamera = {
+		world->player.position.x + PLAYER_SIZE / 2,
+		world->player.position.y + PLAYER_SIZE / 2
+	};
+	
+	// Camera bounds - clamp desired position first
+	float minCameraX = SCREEN_WIDTH / 2.0f;
+	float maxCameraX = world->level.width * TILE_SIZE - SCREEN_WIDTH / 2.0f;
+	float minCameraY = SCREEN_HEIGHT / 2.0f;
+	float maxCameraY = world->level.height * TILE_SIZE - SCREEN_HEIGHT / 2.0f;
+	
+	// Clamp desired camera position to level bounds
+	if (world->level.width * TILE_SIZE > SCREEN_WIDTH)
+	{
+		if (desiredCamera.x < minCameraX)
+			desiredCamera.x = minCameraX;
+		if (desiredCamera.x > maxCameraX)
+			desiredCamera.x = maxCameraX;
+	}
+	else
+	{
+		desiredCamera.x = (world->level.width * TILE_SIZE) / 2.0f;
+	}
+	
+	if (world->level.height * TILE_SIZE > SCREEN_HEIGHT)
+	{
+		if (desiredCamera.y < minCameraY)
+			desiredCamera.y = minCameraY;
+		if (desiredCamera.y > maxCameraY)
+			desiredCamera.y = maxCameraY;
+	}
+	else
+	{
+		desiredCamera.y = (world->level.height * TILE_SIZE) / 2.0f;
+	}
+	
+	// Apply smooth camera movement toward clamped desired position
 	float smoothing = 0.15f;
-	world->camera.target.x = world->player.position.x +
-	                         (PLAYER_SIZE / 2) * (1.0f - smoothing) +
+	world->camera.target.x = desiredCamera.x * (1.0f - smoothing) +
 	                         world->camera.target.x * smoothing;
-	world->camera.target.y = world->player.position.y +
-	                         (PLAYER_SIZE / 2) * (1.0f - smoothing) +
+	world->camera.target.y = desiredCamera.y * (1.0f - smoothing) +
 	                         world->camera.target.y * smoothing;
-	if (world->camera.target.x < SCREEN_WIDTH / 2)
-		world->camera.target.x = SCREEN_WIDTH / 2;
-	if (world->camera.target.x >
-	    world->level.width * TILE_SIZE - SCREEN_WIDTH / 2)
-		world->camera.target.x =
-		    world->level.width * TILE_SIZE - SCREEN_WIDTH / 2;
-	if (world->camera.target.y < SCREEN_HEIGHT / 2)
-		world->camera.target.y = SCREEN_HEIGHT / 2;
-	if (world->camera.target.y >
-	    world->level.height * TILE_SIZE - SCREEN_HEIGHT / 2)
-		world->camera.target.y =
-		    world->level.height * TILE_SIZE - SCREEN_HEIGHT / 2;
 }
 
 bool World_IsPlayerOutOfBounds(const World *world)
