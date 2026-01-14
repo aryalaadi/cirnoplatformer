@@ -345,6 +345,8 @@ void World_ResetBullets(World *world)
 	for (int i = 0; i < world->spawnerCount; i++)
 	{
 		world->spawners[i].timer = 0.0f;
+		world->spawners[i].health = SPAWNER_INITIAL_HEALTH;
+		world->spawners[i].active = true;
 	}
 }
 
