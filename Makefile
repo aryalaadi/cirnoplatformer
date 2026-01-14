@@ -1,7 +1,7 @@
 CC = gcc
-CFLAGS = -Wall -Wextra -std=c99
-CFLAGS_DEBUG = -Wall -Wextra -std=c99 -g -O0 -DDEBUG
-CFLAGS_RELEASE = -Wall -Wextra -std=c99 -O2 -DNDEBUG
+CFLAGS = -Wall -Wextra -std=c99 -Wno-unused-parameter
+CFLAGS_DEBUG = -Wall -Wextra -std=c99 -g -O0 -DDEBUG -Wno-unused-parameter
+CFLAGS_RELEASE = -Wall -Wextra -std=c99 -O2 -DNDEBUG -Wno-unused-parameter
 LDFLAGS = -lraylib -lopengl32 -lgdi32 -lwinmm
 LDFLAGS_RELEASE = -lraylib -lopengl32 -lgdi32 -lwinmm -s
 
