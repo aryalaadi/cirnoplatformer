@@ -27,7 +27,7 @@ void Spawner_Update(BulletSpawner *spawner, Bullet bullets[], int *bulletCount,
 void Spawner_Draw(const BulletSpawner *spawner);
 
 // Bullet functions
-void Bullet_Update(Bullet bullets[], int *bulletCount, float dt);
+void Bullet_Update(Bullet bullets[], int *bulletCount, Player *player, float dt);
 void Bullet_Draw(const Bullet bullets[], int bulletCount);
 bool Bullet_CheckCollision(const Bullet *bullet, Rectangle playerBounds);
 

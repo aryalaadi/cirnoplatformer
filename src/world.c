@@ -113,7 +113,7 @@ void World_Update(World *world, float dt, const KeyBindings *keys)
 			               world->player.position, dt);
 		}
 	}
-	Bullet_Update(world->bullets, &world->bulletCount, dt);
+	Bullet_Update(world->bullets, &world->bulletCount, &world->player, dt);
 	Collectible_Update(world->collectibles, &world->collectibleCount, dt);
 	
 	Rectangle playerBounds = Player_GetBounds(&world->player);

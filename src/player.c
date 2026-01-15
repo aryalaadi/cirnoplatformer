@@ -55,6 +55,9 @@ void Player_Init(Player *p, Vector2 spawn)
 	p->parryCooldown = 0;
 	p->isParryActive = false;
     p->canSpellCard = false;
+	p->spellCard.active = false;
+	p->spellCard.timer = 0;
+	p->spellCard.radius = 50.0f;
 	if (FileExists(ASSET_PLAYER_PATH))
 	{
 		p->spriteSheet = LoadTexture(ASSET_PLAYER_PATH);
@@ -87,6 +90,16 @@ void Player_Update(Player *p, float dt, Assets *assets, const KeyBindings *keys)
 		p->parryWindowTimer -= dt;
 	if (p->parryCooldown > 0)
 		p->parryCooldown -= dt;
+	
+	// Update spell card timer
+	if (p->spellCard.active && p->spellCard.timer > 0)
+	{
+		p->spellCard.timer -= dt;
+		if (p->spellCard.timer <= 0)
+		{
+			p->spellCard.active = false;
+		}
+	}
 	
 	// Update parry active state
 	p->isParryActive = (p->parryWindowTimer > 0);
@@ -146,6 +159,14 @@ void Player_Update(Player *p, float dt, Assets *assets, const KeyBindings *keys)
 		p->isDucking = false;
 	}
 	// else: maintain current isDucking state if key held but not on ground
+	
+	// Spell card activation
+	if (IsKeyPressed(keys->spellcard) && p->canSpellCard)
+	{
+		p->canSpellCard = false;
+		p->spellCard.active = true;
+		p->spellCard.timer = 10.0f;  // 10 second duration
+	}
 	
 	if (IsKeyPressed(keys->dash) && p->dashCooldown <= 0 && p->canDash &&
 	    !p->isFloating)
@@ -530,8 +551,16 @@ void Player_Draw(const Player *p)
 		}
 		
 		DrawRectangle((int)p->position.x, (int)p->position.y, PLAYER_SIZE,
-		              PLAYER_SIZE, playerColor);
-		int triSize = 5;
+		              PLAYER_SIZE, playerColor);		
+		// Draw spell card effect
+		if (p->spellCard.active)
+		{
+			Vector2 center = {p->position.x + PLAYER_SIZE / 2, p->position.y + PLAYER_SIZE / 2};
+			DrawCircleV(center, p->spellCard.radius, (Color){100, 150, 255, 100});
+			DrawCircleLines((int)center.x, (int)center.y, (int)p->spellCard.radius, (Color){100, 150, 255, 200});
+			DrawText(TextFormat("%.1f", p->spellCard.timer), (int)center.x - 20, (int)center.y - 10, 20, BLUE);
+		}
+				int triSize = 5;
 		if (p->facingRight)
 		{
 			DrawTriangle((Vector2){p->position.x + PLAYER_SIZE,

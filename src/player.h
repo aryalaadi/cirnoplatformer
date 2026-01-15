@@ -16,6 +16,14 @@ typedef enum
 	ANIM_DEATH,
 	ANIM_DUCK
 } PlayerAnimState;
+
+typedef struct
+{
+	bool active;
+	float timer;
+	float radius;
+} SpellCardEffect;
+
 typedef struct
 {
 	Vector2 position;
@@ -49,6 +57,7 @@ typedef struct
 	bool isSlowingDown;
 	bool isDucking;
     bool canSpellCard;
+	SpellCardEffect spellCard;
 	// Parry system
 	float parryWindowTimer;   // Timer for active parry window
 	float parryCooldown;       // Cooldown between parry attempts

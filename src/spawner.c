@@ -319,7 +319,7 @@ void Spawner_PatternTargeting(BulletSpawner *spawner, Bullet bullets[],
 		(*bulletCount)++;
 	}
 }
-void Bullet_Update(Bullet bullets[], int *bulletCount, float dt)
+void Bullet_Update(Bullet bullets[], int *bulletCount, Player *player, float dt)
 {
 	for (int i = 0; i < *bulletCount; i++)
 	{
@@ -332,6 +332,20 @@ void Bullet_Update(Bullet bullets[], int *bulletCount, float dt)
 		    bullets[i].position.y < -100 || bullets[i].position.y > 5000)
 		{
 			bullets[i].active = false;
+		}
+		
+		// Check if spell card is active and bullet is inside
+		if (player && player->spellCard.active)
+		{
+			Vector2 playerCenter = {player->position.x + PLAYER_SIZE / 2, player->position.y + PLAYER_SIZE / 2};
+			float dx = bullets[i].position.x - playerCenter.x;
+			float dy = bullets[i].position.y - playerCenter.y;
+			float distance = sqrtf(dx * dx + dy * dy);
+			
+			if (distance < player->spellCard.radius)
+			{
+				bullets[i].active = false;
+			}
 		}
 	}
 	// Remove inactive bullets to prevent array growth
