@@ -2,6 +2,7 @@
 #define SPAWNER_H
 #include "config.h"
 #include "raylib.h"
+#include "player.h"
 typedef struct
 {
 	float cooldown;
@@ -44,7 +45,7 @@ void ParryEffect_Draw(const ParryEffect effects[], int effectCount);
 
 // Spawner damage functions
 BulletSpawner* Spawner_FindNearest(BulletSpawner spawners[], int spawnerCount, Vector2 position);
-void Spawner_TakeDamage(BulletSpawner *spawner, int damage);
+void Spawner_TakeDamage(BulletSpawner *spawner, int damage, Player *player);
 
 // Config helpers
 SpawnerConfig Spawner_GetDefaultConfig(SpawnerPattern pattern);

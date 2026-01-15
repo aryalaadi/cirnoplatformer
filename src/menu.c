@@ -47,7 +47,7 @@ static const char *settingsItems[] = {
 static const char *keybindingItems[] = {
     "Move Left: ", "Move Right: ",      "Jump: ",
     "Dash: ",      "Wall Cling: ",      "Float: ", 
-    "Pause: ",     "Slow Down: ",       "Heal: ",
+    "Pause: ",     "Slow Down: ",       "Heal: ", "Spell Card: ",
     "Reset to Defaults", "Back"};
 
 static const char *resolutionNames[] = {"800x600", "1024x768", "1280x720",
@@ -68,6 +68,7 @@ void Menu_SetDefaultKeyBindings(void)
 	settings.keys.menuBack = KEY_ESCAPE;
 	settings.keys.slowDown = KEY_S;
 	settings.keys.heal = KEY_H;
+    settings.keys.spellcard = KEY_Z;
 }
 
 // TODO: support mouse button because my friend uses it for some reason.
@@ -241,6 +242,9 @@ void Menu_Update(void)
 			case 8:
 				settings.keys.heal = key;
 				break;
+            case 9:
+                settings.keys.spellcard = key;
+                break;
 			}
 			waitingForKey = -1;
 			Menu_SaveSettings();
@@ -351,21 +355,21 @@ void Menu_Update(void)
 	else if (currentScreen == MENU_KEYBINDINGS)
 	{
 		if (IsKeyPressed(KEY_DOWN))
-			selectedIndex = (selectedIndex + 1) % 11;
+			selectedIndex = (selectedIndex + 1) % 12;
 		if (IsKeyPressed(KEY_UP))
-			selectedIndex = (selectedIndex + 10) % 11;
+			selectedIndex = (selectedIndex + 11) % 12;
 		if (IsKeyPressed(KEY_ENTER))
 		{
-			if (selectedIndex < 9)
+			if (selectedIndex < 10)
 			{
 				waitingForKey = selectedIndex;
 			}
-			else if (selectedIndex == 9)
+			else if (selectedIndex == 10)
 			{
 				Menu_SetDefaultKeyBindings();
 				Menu_SaveSettings();
 			}
-			else if (selectedIndex == 10)
+			else if (selectedIndex == 11)
 			{
 				currentScreen = MENU_SETTINGS;
 				selectedIndex = 0;
@@ -522,12 +526,12 @@ void Menu_Draw(void)
 			         YELLOW);
 			DrawText("(ESC to cancel)", SCREEN_WIDTH / 2 - 80, 180, 18, GRAY);
 		}
-		for (int i = 0; i < 11; i++)
+		for (int i = 0; i < 12; i++)
 		{
 			Color c =
 			    (i == selectedIndex && waitingForKey < 0) ? YELLOW : WHITE;
 			int yPos = 220 + i * 32;
-			if (i < 9)
+			if (i < 10)
 			{
 				DrawText(keybindingItems[i], SCREEN_WIDTH / 2 - 180, yPos, 20,
 				         c);
@@ -561,6 +565,8 @@ void Menu_Draw(void)
 				case 8:
 					keyName = Menu_GetKeyName(settings.keys.heal);
 					break;
+                case 9:
+                    keyName = Menu_GetKeyName(settings.keys.spellcard);
 				}
 				if (waitingForKey == i)
 				{

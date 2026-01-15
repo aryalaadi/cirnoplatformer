@@ -621,7 +621,7 @@ BulletSpawner* Spawner_FindNearest(BulletSpawner spawners[], int spawnerCount, V
 	return nearest;
 }
 
-void Spawner_TakeDamage(BulletSpawner *spawner, int damage)
+void Spawner_TakeDamage(BulletSpawner *spawner, int damage, Player *player)
 {
 	if (!spawner || !spawner->active)
 		return;
@@ -629,6 +629,7 @@ void Spawner_TakeDamage(BulletSpawner *spawner, int damage)
 	spawner->health -= damage;
 	if (spawner->health <= 0)
 	{
+		player->canSpellCard = true;
 		spawner->active = false;
 		spawner->health = 0;
 	}

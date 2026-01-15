@@ -62,7 +62,7 @@ void Editor_RefreshLevelList(LevelEditor *editor)
 void Editor_NewLevel(LevelEditor *editor)
 {
 	Level_Unload(&editor->level);
-	Level_Create(&editor->level, 30, 20);
+	Level_Create(&editor->level, 40, 20);
 	strcpy(editor->levelName, "newlevel");
 	strcpy(editor->levelNameBuffer, "newlevel");
 	editor->currentLevelIndex = -1;
@@ -73,7 +73,7 @@ void Editor_NewLevel(LevelEditor *editor)
 void Editor_SaveLevel(LevelEditor *editor)
 {
 	char filepath[512];
-	snprintf(filepath, sizeof(filepath), "assets/levels/%s.lvl",
+	snprintf(filepath, sizeof(filepath), ASSET_LEVEL_PATH, // "assets/levels/%s.lvl",
 	         editor->levelName);
 	Level_SaveToFile(&editor->level, filepath);
 	snprintf(editor->statusMessage, sizeof(editor->statusMessage), "Saved: %s",

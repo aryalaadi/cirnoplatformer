@@ -48,6 +48,7 @@ typedef struct
 	bool hasSprite;
 	bool isSlowingDown;
 	bool isDucking;
+    bool canSpellCard;
 	// Parry system
 	float parryWindowTimer;   // Timer for active parry window
 	float parryCooldown;       // Cooldown between parry attempts

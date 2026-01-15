@@ -19,6 +19,7 @@
 #include "player.h"
 #include "config.h"
 #include <math.h>
+#include <stdio.h>
 void Player_Init(Player *p, Vector2 spawn)
 {
 	p->position = spawn;
@@ -53,9 +54,10 @@ void Player_Init(Player *p, Vector2 spawn)
 	p->parryWindowTimer = 0;
 	p->parryCooldown = 0;
 	p->isParryActive = false;
-	if (FileExists("assets/sprites/player.png"))
+    p->canSpellCard = false;
+	if (FileExists(ASSET_PLAYER_PATH))
 	{
-		p->spriteSheet = LoadTexture("assets/sprites/player.png");
+		p->spriteSheet = LoadTexture(ASSET_PLAYER_PATH);
 		p->hasSprite = true;
 	}
 }
@@ -227,6 +229,11 @@ void Player_Update(Player *p, float dt, Assets *assets, const KeyBindings *keys)
 	else
 	{
 		p->isSlowingDown = false;
+	}
+	if (IsKeyPressed(keys->spellcard) && p->canSpellCard)
+	{
+		printf("Spell Card Activated!\n");
+		p->canSpellCard = false;
 	}
 	bool jumpPressed = IsKeyPressed(
 	    keys->jump); //|| IsKeyPressed(KEY_W) || IsKeyPressed(KEY_UP);

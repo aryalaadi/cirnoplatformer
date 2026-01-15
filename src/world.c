@@ -190,7 +190,7 @@ void World_Update(World *world, float dt, const KeyBindings *keys)
 			if (distance < world->bullets[i].radius)
 			{
 				// Hit! Damage spawner and destroy bullet
-				Spawner_TakeDamage(&world->spawners[j], 1);
+				Spawner_TakeDamage(&world->spawners[j], 1, &world->player);
 				world->bullets[i].active = false;
 				break; // Bullet can only hit one spawner
 			}

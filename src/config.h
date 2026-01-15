@@ -79,6 +79,13 @@
 #define MAX_CUSTOM_WORLDS 100
 #define MAX_SAVE_SLOTS 5
 
+
+//=============================================================================
+// ASSET CONFIGS
+//=============================================================================
+#define ASSET_LEVEL_PATH "asset/levels/%s.lvl"
+#define ASSET_PLAYER_PATH "asset/sprites/player.png"
+
 //=============================================================================
 // ENTITY LIMITS
 //=============================================================================
@@ -294,6 +301,7 @@ typedef struct
 	int slowDown;
 	int heal;
 	int pause;
+    int spellcard;
 	int menuUp;
 	int menuDown;
 	int menuSelect;
