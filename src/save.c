@@ -62,6 +62,10 @@ bool Save_ReadMetadata(SaveMetadata *meta, const char *filename)
 	meta->currentLevel = data.currentLevel;
 	meta->deathCount = data.deathCount;
 	meta->health = data.health;
+	meta->totalScore = data.totalScore;
+	meta->currentLevelScore = data.currentLevelScore;
+	meta->healthPoints = data.healthPoints;
+	meta->canSpellCard = data.canSpellCard;
 	meta->isValid = data.isValid;
 	return true;
 }

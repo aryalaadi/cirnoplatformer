@@ -34,6 +34,7 @@ typedef struct
 	int totalScore;           // Total score across all completed levels
 	int currentLevelScore;    // Score in current level (reset on death)
 	int healthPoints;         // Collected health points (10 = 1 heal)
+	bool canSpellCard;        // Whether player can use spell card
 } GameData;
 void Game_Init(void);
 void Game_Update(void);

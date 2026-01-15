@@ -7,6 +7,10 @@ typedef struct
 	int currentLevel;
 	int deathCount;
 	int health;
+	int totalScore;
+	int currentLevelScore;
+	int healthPoints;
+	bool canSpellCard;
 	bool isValid;
 } SaveMetadata;
 void Save_Write(const GameData *data, const char *filename);

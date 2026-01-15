@@ -179,6 +179,7 @@ void Game_StartNewWithName(void)
 	gameData.totalScore = 0;
 	gameData.currentLevelScore = 0;
 	gameData.healthPoints = 0;
+	gameData.canSpellCard = false;
 	memset(gameData.levelProgress, 0, sizeof(gameData.levelProgress));
 	memset(gameData.levelDeaths, 0, sizeof(gameData.levelDeaths));
 	snprintf(gameData.saveName, sizeof(gameData.saveName), "Save_%s",
@@ -220,6 +221,7 @@ void Game_SaveProgress(void)
 	char filename[256];
 	snprintf(filename, sizeof(filename), "%s.sav", gameData.saveName);
 	gameData.health = world.player.health;
+	gameData.canSpellCard = world.player.canSpellCard;
 	Achievement_Save(&gameData.achievements);
 	Save_Write(&gameData, filename);
 }
@@ -419,6 +421,7 @@ void Game_Update(void)
 				}
 				World_Load(&world, gameData.currentLevel);
 				world.player.health = gameData.health;
+				world.player.canSpellCard = gameData.canSpellCard;
 				currentState = STATE_PLAYING;
 				worldLoaded = true;
 				if (settings && settings->soundEnabled)
