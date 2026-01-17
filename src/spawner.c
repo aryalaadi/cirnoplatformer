@@ -34,58 +34,58 @@ SpawnerConfig Spawner_GetDefaultConfig(SpawnerPattern pattern)
 	switch (pattern)
 	{
 	case SPAWNER_PATTERN_CIRCLE:
-		config.cooldown = 2.0f;
-		config.bulletCount = 5;
+		config.cooldown = 0.4f;
+		config.bulletCount = 16;
 		config.bulletSpeed = 150.0f;
 		config.spreadAngle = 360.0f;
 		config.rotationSpeed = 0;
 		config.randomizeSpeed = false;
 		config.speedVariation = 0;
-		config.bulletColor = RED;
+		config.bulletColor = (Color){0, 255, 255, 255}; // Bright cyan
 		config.bulletSize = 4.0f;
 		break;
 	case SPAWNER_PATTERN_SPIRAL:
-		config.cooldown = 1.0f;
-		config.bulletCount = 4;
+		config.cooldown = 0.3f;
+		config.bulletCount = 16;
 		config.bulletSpeed = 120.0f;
 		config.spreadAngle = 0;
 		config.rotationSpeed = 180.0f;
 		config.randomizeSpeed = false;
 		config.speedVariation = 0;
-		config.bulletColor = PURPLE;
+		config.bulletColor = (Color){255, 0, 255, 255}; // Bright magenta
 		config.bulletSize = 4.0f;
 		break;
 	case SPAWNER_PATTERN_WAVE:
 		config.cooldown = 0.5f;
-		config.bulletCount = 4;
+		config.bulletCount = 10;
 		config.bulletSpeed = 100.0f;
 		config.spreadAngle = 60.0f;
 		config.rotationSpeed = 90.0f;
 		config.randomizeSpeed = false;
 		config.speedVariation = 0;
-		config.bulletColor = BLUE;
+		config.bulletColor = (Color){0, 255, 100, 255}; // Bright lime
 		config.bulletSize = 6.0f;
 		break;
 	case SPAWNER_PATTERN_BURST:
-		config.cooldown = 0.5f;
+		config.cooldown = 0.6f;
 		config.bulletCount = 12;
 		config.bulletSpeed = 180.0f;
 		config.spreadAngle = 360.0f;
 		config.rotationSpeed = 0;
 		config.randomizeSpeed = true;
 		config.speedVariation = 40.0f;
-		config.bulletColor = ORANGE;
+		config.bulletColor = (Color){255, 100, 0, 255}; // Bright orange-red
 		config.bulletSize = 7.0f;
 		break;
 	case SPAWNER_PATTERN_TARGETING:
-		config.cooldown = 1.2f;
-		config.bulletCount = 9;
-		config.bulletSpeed = 140.0f;
+		config.cooldown = 0.35f;
+		config.bulletCount = 20;
+		config.bulletSpeed = 200.0f;
 		config.spreadAngle = 45.0f;
 		config.rotationSpeed = 0;
 		config.randomizeSpeed = false;
 		config.speedVariation = 0;
-		config.bulletColor = YELLOW;
+		config.bulletColor = (Color){255, 255, 0, 255}; // Bright yellow
 		config.bulletSize = 5.0f;
 		break;
 	}
@@ -130,9 +130,6 @@ void Spawner_Update(BulletSpawner *spawner, Bullet bullets[], int *bulletCount,
 		return;
 	}
 	
-	// Stop spawning if too many bullets exist
-	if (*bulletCount >= MAX_BULLETS - 20)
-		return;
 	spawner->timer += dt;
 	spawner->angleOffset += dt * spawner->rotationSpeed;
 	if (spawner->timer >= spawner->cooldown)
@@ -232,7 +229,9 @@ void Spawner_PatternCircle(BulletSpawner *spawner, Bullet bullets[],
 		bullets[*bulletCount] = (Bullet){.position = center,
 		                                 .velocity = velocity,
 		                                 .radius = spawner->bulletSize,
-		                                 .active = true};
+		                                 .active = true,
+		                                 .isParried = false,
+		                                 .color = spawner->bulletColor};
 		(*bulletCount)++;
 	}
 }
@@ -249,7 +248,9 @@ void Spawner_PatternSpiral(BulletSpawner *spawner, Bullet bullets[],
 		bullets[*bulletCount] = (Bullet){.position = center,
 		                                 .velocity = velocity,
 		                                 .radius = spawner->bulletSize,
-		                                 .active = true};
+		                                 .active = true,
+		                                 .isParried = false,
+		                                 .color = spawner->bulletColor};
 		(*bulletCount)++;
 	}
 }
@@ -270,7 +271,8 @@ void Spawner_PatternWave(BulletSpawner *spawner, Bullet bullets[],
 		                                 .velocity = velocity,
 		                                 .radius = spawner->bulletSize,
 		                                 .active = true,
-		                                 .isParried = false};
+		                                 .isParried = false,
+		                                 .color = spawner->bulletColor};
 		(*bulletCount)++;
 	}
 }
@@ -289,11 +291,20 @@ void Spawner_PatternBurst(BulletSpawner *spawner, Bullet bullets[],
 			         spawner->speedVariation;
 		}
 		Vector2 velocity = {cosf(angle) * speed, sinf(angle) * speed};
+		// Add some color variation for burst pattern
+		Color bulletColor = spawner->bulletColor;
+		if (spawner->randomizeSpeed) {
+			// Slightly vary the color for burst pattern
+			bulletColor.r = (unsigned char)((bulletColor.r + (rand() % 50) - 25) > 255 ? 255 : (bulletColor.r + (rand() % 50) - 25) < 0 ? 0 : bulletColor.r + (rand() % 50) - 25);
+			bulletColor.g = (unsigned char)((bulletColor.g + (rand() % 50) - 25) > 255 ? 255 : (bulletColor.g + (rand() % 50) - 25) < 0 ? 0 : bulletColor.g + (rand() % 50) - 25);
+			bulletColor.b = (unsigned char)((bulletColor.b + (rand() % 50) - 25) > 255 ? 255 : (bulletColor.b + (rand() % 50) - 25) < 0 ? 0 : bulletColor.b + (rand() % 50) - 25);
+		}
 		bullets[*bulletCount] = (Bullet){.position = center,
 		                                 .velocity = velocity,
 		                                 .radius = spawner->bulletSize,
 		                                 .active = true,
-		                                 .isParried = false};
+		                                 .isParried = false,
+		                                 .color = bulletColor};
 		(*bulletCount)++;
 	}
 }
@@ -315,7 +326,8 @@ void Spawner_PatternTargeting(BulletSpawner *spawner, Bullet bullets[],
 		                                 .velocity = velocity,
 		                                 .radius = spawner->bulletSize,
 		                                 .active = true,
-		                                 .isParried = false};
+		                                 .isParried = false,
+		                                 .color = spawner->bulletColor};
 		(*bulletCount)++;
 	}
 }
@@ -327,11 +339,28 @@ void Bullet_Update(Bullet bullets[], int *bulletCount, Player *player, float dt)
 			continue;
 		bullets[i].position.x += bullets[i].velocity.x * dt;
 		bullets[i].position.y += bullets[i].velocity.y * dt;
-		// Tighter bounds checking for better performance
-		if (bullets[i].position.x < -100 || bullets[i].position.x > 5000 ||
-		    bullets[i].position.y < -100 || bullets[i].position.y > 5000)
-		{
-			bullets[i].active = false;
+		
+		// Screen-based bounds checking for better performance
+		// Despawn bullets that are well outside the screen area around player
+		if (player) {
+			float screenMargin = 200.0f; // Extra margin beyond screen
+			float playerX = player->position.x + PLAYER_SIZE / 2;
+			float playerY = player->position.y + PLAYER_SIZE / 2;
+			
+			if (bullets[i].position.x < playerX - SCREEN_WIDTH/2 - screenMargin ||
+			    bullets[i].position.x > playerX + SCREEN_WIDTH/2 + screenMargin ||
+			    bullets[i].position.y < playerY - SCREEN_HEIGHT/2 - screenMargin ||
+			    bullets[i].position.y > playerY + SCREEN_HEIGHT/2 + screenMargin)
+			{
+				bullets[i].active = false;
+			}
+		} else {
+			// Fallback bounds if no player
+			if (bullets[i].position.x < -500 || bullets[i].position.x > 10000 ||
+			    bullets[i].position.y < -500 || bullets[i].position.y > 10000)
+			{
+				bullets[i].active = false;
+			}
 		}
 		
 		// Check if spell card is active and bullet is inside
@@ -385,12 +414,17 @@ void Bullet_Draw(const Bullet bullets[], int bulletCount)
 		}
 		else
 		{
-			// Normal red bullets
+			// Use bullet's own color
 			DrawCircleV(bullets[i].position, bullets[i].radius + 2,
 			            (Color){255, 255, 255, 50});
-			DrawCircleV(bullets[i].position, bullets[i].radius, RED);
-			DrawCircleV(bullets[i].position, bullets[i].radius - 1,
-			            (Color){255, 100, 100, 255});
+			DrawCircleV(bullets[i].position, bullets[i].radius, bullets[i].color);
+			
+			// Add a slightly lighter center for visual effect
+			Color lightColor = bullets[i].color;
+			lightColor.r = (unsigned char)(lightColor.r + (255 - lightColor.r) * 0.4f);
+			lightColor.g = (unsigned char)(lightColor.g + (255 - lightColor.g) * 0.4f);
+			lightColor.b = (unsigned char)(lightColor.b + (255 - lightColor.b) * 0.4f);
+			DrawCircleV(bullets[i].position, bullets[i].radius - 1, lightColor);
 		}
 	}
 }

@@ -44,6 +44,7 @@
 #define PLAYER_WALL_JUMP_TIME 0.2f
 #define PLAYER_WALL_CLING_DURATION 2.0f
 #define PLAYER_INVULNERABILITY_TIME 1.5f
+#define SPELLCARDTIME 5.0f
 
 // Parry System
 #define PARRY_WINDOW_TIME 0.4f         // Time window to successfully parry (in seconds)
@@ -107,7 +108,7 @@
 // SPAWNER SYSTEM
 //=============================================================================
 #define SPAWNER_INITIAL_HEALTH 5        // How many parried bullets to destroy spawner
-#define PARRIED_BULLET_SPEED_MULTIPLIER 1.5f  // Speed multiplier for reflected bullets
+#define PARRIED_BULLET_SPEED_MULTIPLIER 2.5f  // Speed multiplier for reflected bullets
 
 //=============================================================================
 // COLLECTIBLE SYSTEM
@@ -257,6 +258,7 @@ typedef struct
 	float radius;
 	bool active;
 	bool isParried;  // True if bullet was parried and is returning to spawner
+	Color color;     // Color of the bullet
 } Bullet;
 
 typedef struct

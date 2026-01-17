@@ -165,7 +165,7 @@ void Player_Update(Player *p, float dt, Assets *assets, const KeyBindings *keys)
 	{
 		p->canSpellCard = false;
 		p->spellCard.active = true;
-		p->spellCard.timer = 10.0f;  // 10 second duration
+		p->spellCard.timer = SPELLCARDTIME;  // 10 second duration
 	}
 	
 	if (IsKeyPressed(keys->dash) && p->dashCooldown <= 0 && p->canDash &&
